@@ -31,6 +31,8 @@ jobs:
         run: npm run test:final-m7
       - name: M8 canonical confirmed ERC20 holdings and transfers, independent game signatures and zero credit
         run: npm run test:final-m8
+      - name: Final10 M9 immutable no-release gates, full restore integrity and safe rollback dry run
+        run: npm run test:final-m9
       - run: npm run typecheck
       - run: npm run build
       - name: M34 protected end-to-end acceptance smoke and POST denial
