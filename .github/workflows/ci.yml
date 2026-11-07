@@ -27,6 +27,8 @@ jobs:
         run: npm run test:final-m5
       - name: M6 owner-scoped zero-fee factory calldata, transaction proof and strict metadata
         run: npm run test:final-m6
+      - name: M7 original creator/pair provenance, unsigned swap review and zero execution
+        run: npm run test:final-m7
       - run: npm run typecheck
       - run: npm run build
       - name: M34 protected end-to-end acceptance smoke and POST denial
@@ -174,6 +176,17 @@ jobs:
           LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
           LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
           LOOKE_M6_CREATOR_PREVIEW_WRITES_ENABLED: 'true'
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
+      - name: M7 signed owner-scoped no-transaction intents and original source NO-GO (disposable PostgreSQL)
+        run: npm run test:final-m7-db
+        env:
+          DATABASE_URL: postgres://looke_ci:ci_only_password@localhost:5432/looke_social_ci
+          LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
+          LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
+          LOOKE_M7_MARKET_REVIEW_WRITES_ENABLED: 'true'
+          LOOKE_M7_OPERATOR_SOURCE_APPROVED: 'false'
           LOOKE_PUBLIC_BETA_ENABLED: 'false'
       - name: Verify media moderation approval visibility and SQL constraints (disposable DB)
         run: npm run test:m15-db
