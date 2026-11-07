@@ -3,6 +3,7 @@ import {viewer,requireViewer,verifyRequestOrigin,writesEnabled,HttpError} from "
 import {query,rateLimit} from "../../../../lib/social/db";
 import {readJson} from "../../../../lib/social/http";
 import {failure} from "../../../../lib/social/http";
+import {m3SocialWritesEnabled} from "../../../../lib/social/m3-social-access";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -133,7 +134,7 @@ export async function GET(request:NextRequest){
 export async function POST(request:NextRequest){
  try{
    verifyRequestOrigin(request);
-   if(!writesEnabled())throw new HttpError(503,"Notification write state is disabled.");
+   if(!writesEnabled()&&!m3SocialWritesEnabled())throw new HttpError(503,"Notification write state is disabled.");
    const actor=(await requireViewer(request)).address;
    const input=await readJson(request);
    if(input.action!=="mark_read")throw new HttpError(400,"Unknown notification action.");

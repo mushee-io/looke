@@ -408,9 +408,9 @@ export default function SocialPage(){
           <p>Posts reference assets; they do not verify holdings or represent investment advice.</p></div>
       </aside>
       <section className="social-main">
-        <div className="social-overline">M2 / ULTRA EVM WALLET IDENTITY · PROTECTED TESTNET PREVIEW</div>
+        <div className="social-overline">M3 / CREATOR FEED · ULTRA EVM TESTNET · PROTECTED PREVIEW</div>
         <div className="social-hero"><h1>{tab==="feed"?"People. Ideas. Culture.":tab==="discover"?"Find your people.":tab==="messages"?"Conversations.":tab==="activity"?"Your real activity.":tab==="analytics"?"Creator analytics.":tab==="points"?"Looke Points.":tab==="points-review"?"Points evidence review.":tab==="integrity"?"Account integrity.":tab==="backend"?"Backend verification.":tab==="security"?"Testnet & security.":tab==="beta"?"Protected Testnet beta.":tab==="acceptance"?"Controlled Testnet acceptance.":tab==="audit"?"Independent launch audit.":tab==="operations"?"Operator acceptance.":tab==="verification"?"External acceptance verification.":tab==="rehearsal"?"Protected release rehearsal.":tab==="real-evidence"?"Real independent evidence.":tab==="operator-evidence"?"Original operator evidence collection.":tab==="operator-run"?"Real operator acceptance prerequisites.":tab==="source-gates"?"Current source compatibility and blockers.":tab==="source-reconcile"?"Real database lineage reconciliation.":tab==="live-integrations"?"Live Ultra integration proof console.":tab==="final-acceptance"?"Final independent Testnet acceptance.":tab==="controls"?"Your account.":tab==="moderation"?"Review queue.":"Your identity."}</h1>
-          <p>Share what you create. Discover the people shaping Ultra. All displayed activity comes from the Looke social database.</p></div>
+          <p>Share what you create. Discover the people shaping Ultra. Posts, replies, likes, follows and notifications are sourced from real Looke PostgreSQL records, never generated activity.</p></div>
         {backendStatus==="unconfigured"&&<div className="social-warning"><strong>Backend not ready.</strong> Social database or sign-in configuration is unavailable. No demo profiles or fake posts are shown.</div>}
         {notice&&<div className="social-notice" role="status">{notice}</div>}
         {tab==="feed"&&<>

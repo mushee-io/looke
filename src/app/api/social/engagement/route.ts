@@ -4,6 +4,7 @@ import {HttpError,requireViewer,verifyRequestOrigin,writesEnabled} from "../../.
 import {query,rateLimit,socialDb} from "../../../../lib/social/db";
 import {failure,readJson} from "../../../../lib/social/http";
 import {activityKind,engagementMutation,mutations,summaryFromRows} from "../../../../lib/social/engagement";
+import {m3SocialWritesEnabled} from "../../../../lib/social/m3-social-access";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -55,7 +56,7 @@ export async function GET(req:NextRequest){
 export async function POST(req:NextRequest){
  try{
   verifyRequestOrigin(req);
-  if(!writesEnabled())throw new HttpError(503,"Creator engagement is disabled until social moderation is approved.");
+  if(!writesEnabled()&&!m3SocialWritesEnabled())throw new HttpError(503,"Creator engagement is disabled until social moderation is approved.");
   const actor=(await requireViewer(req)).address;
   const data=engagementMutation.parse(await readJson(req));
   await rateLimit(actor,"engagement",90,600);
