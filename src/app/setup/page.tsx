@@ -116,8 +116,8 @@ export default function TestnetSetup(){
    client.readContract({address:ca.base,abi:erc20Abi,functionName:"allowance",args:[account,ca.router]}),
    client.readContract({address:ca.quote,abi:erc20Abi,functionName:"allowance",args:[account,ca.router]}),
    client.readContract({address:ca.factory,abi:v2FactoryAbi,functionName:"getPair",args:[ca.base,ca.quote]}),
-   client.readContract({address:ca.pair,abi:v2PairAbi,functionName:"getReserves"}),
-   client.readContract({address:ca.pair,abi:v2PairAbi,functionName:"token0"})
+   client.readContract({address:ca.pair!,abi:v2PairAbi,functionName:"getReserves"}),
+   client.readContract({address:ca.pair!,abi:v2PairAbi,functionName:"token0"})
   ]);
   if(getAddress(pair)!==ca.pair||ba<va||bb<vb||aa<va||ab<vb)throw Error("Pair changed or balance/allowance insufficient.");
   const ra=getAddress(t0)===ca.base?reserves[0]:reserves[1],rb=getAddress(t0)===ca.base?reserves[1]:reserves[0];
@@ -129,7 +129,7 @@ export default function TestnetSetup(){
  const [pair,rf,reserves]=await Promise.all([
   client.readContract({address:ca.factory,abi:v2FactoryAbi,functionName:"getPair",args:[ca.base,ca.quote]}),
   client.readContract({address:ca.router,abi:v2RouterAbi,functionName:"factory"}),
-  client.readContract({address:ca.pair,abi:v2PairAbi,functionName:"getReserves"})
+  client.readContract({address:ca.pair!,abi:v2PairAbi,functionName:"getReserves"})
  ]);
  if(getAddress(pair)!==ca.pair||getAddress(rf)!==ca.factory||reserves[0]<=0n||reserves[1]<=0n)throw Error("Verified two-sided reserves are absent.");
  if(!/^[a-z0-9][a-z0-9-]{0,31}$/.test(marketId))throw Error("Invalid market ID.");
