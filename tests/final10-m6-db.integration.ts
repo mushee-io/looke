@@ -114,9 +114,18 @@ test("M6 malicious metadata, wrong pairs, invalid amounts and unverified receipt
   {...draft,supply:"1e9"},
   {...draft,supply:"0.1234567890123456789"}
  ]){
+  await query("DELETE FROM social_rate_windows WHERE actor=$1 AND category='creator_m6_draft'",[owners[0]]);
   const r=await intentPOST(req("/api/experience/creator-intents","POST",0,bad));
   assert.equal(r.status,400,JSON.stringify(bad));
  }
+ // Separate explicit rate-limit check (no rate bypass in production).
+ await query("DELETE FROM social_rate_windows WHERE actor=$1 AND category='creator_m6_draft'",[owners[0]]);
+ for(let attempt=0;attempt<5;attempt++){
+  const denied=await intentPOST(req("/api/experience/creator-intents","POST",0,{...draft,pair:"ETH"}));
+  assert.equal(denied.status,400);
+ }
+ const throttled=await intentPOST(req("/api/experience/creator-intents","POST",0,{...draft,pair:"ETH"}));
+ assert.equal(throttled.status,429);
  const proof=await proofPOST(req("/api/experience/creator-proof","POST",0,{
   transactionHash:"0x"+"a".repeat(64),nonce:"0x"+"1".repeat(64),draft
  }));
