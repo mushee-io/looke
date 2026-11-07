@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({error:"Select config or live."},{status:400,headers});
 
   const [media,messaging] = await Promise.all([
-    Promise.resolve(mediaGET()).then(r=>r.json() as Promise<unknown>).catch(()=>null),
+    Promise.resolve(mediaGET(new NextRequest(new URL('/api/experience/media',request.url)))).then(r=>r.json() as Promise<unknown>).catch(()=>null),
     Promise.resolve(messagingGET()).then(r=>r.json() as Promise<unknown>).catch(()=>null),
   ]);
   let source:unknown = undefined;
