@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState, type FormEvent, type ChangeEvent } from "react";
 import Link from "next/link";
 import { getAddress, isAddress } from "viem";
-import {connectUltraEvmWallet,requireUltraEvmTestnet} from "../../lib/ultra-evm-wallet";
+import {connectUltraEvmWallet,requireUltraEvmTestnet,type UltraEvmWalletProvider} from "../../lib/ultra-evm-wallet";
+import {assertActiveUltraEvmAccount} from "../../lib/social/m2-identity";
+import {isLookeTestnetChain} from "../../lib/ultra";
 import "./social.css";
 import "../../components/experience/m15.css";
 import "../../components/experience/m16.css";
@@ -29,7 +31,7 @@ import {M33LiveIntegrationLab} from "../../components/experience/M33LiveIntegrat
 import {M34FinalAcceptance} from "../../components/experience/M34FinalAcceptance";
 import "../../components/experience/m17.css";
 
-type Wallet = {request:(args:{method:string;params?:unknown[]})=>Promise<unknown>};
+type Wallet = UltraEvmWalletProvider;
 type User = {address:string;handle:string;suspended:boolean};
 type Profile = {address:string;handle:string;display_name:string;bio:string;avatar_url:string|null;created_at:string;follower_count?:number;following_count?:number;is_following?:boolean;post_count?:number;engagement_30d?:number};
 type Post = {id:string;author:string;body:string;asset_chain:string|null;asset_type:string|null;asset_id:string|null;media_url?:string|null;media_kind?:string|null;created_at:string;handle:string;display_name:string;avatar_url:string|null;comment_count:number;follower_count:number;
@@ -93,6 +95,7 @@ export default function SocialPage(){
   const [draftName,setDraftName]=useState("");
   const [draftBio,setDraftBio]=useState("");
   const [draftAvatar,setDraftAvatar]=useState("");
+  const [handleFeedback,setHandleFeedback]=useState("");
   const [newPost,setNewPost]=useState("");
   const [feedSearchInput,setFeedSearchInput]=useState("");
   const [feedSearch,setFeedSearch]=useState("");
@@ -184,8 +187,8 @@ export default function SocialPage(){
 
   const refreshMe=useCallback(async()=>{
     const response=await fetch("/api/social/auth",{cache:"no-store"});
-    const data=await response.json() as {authenticated:boolean;user:User|null;error?:string};
-    if(response.ok){setUser(data.user);setBackendStatus("online");}
+    const data=await response.json() as {authenticated:boolean;user:User|null;identityConfigured?:boolean;error?:string};
+    if(response.ok){setUser(data.user);setBackendStatus(data.identityConfigured===true?"online":"unconfigured");}
     else {setBackendStatus("unconfigured");throw new Error(data.error||"Social API unavailable.");}
     if(data.user){
       try{
@@ -241,6 +244,44 @@ export default function SocialPage(){
   },[directorySort]);
 
   useEffect(()=>{void refreshMe().catch(e=>setNotice(errText(e)));},[refreshMe]);
+  useEffect(()=>{
+    if(!user?.address)return;
+    const wallet=injected();
+    if(!wallet?.on)return;
+    let revoked=false;
+    const invalidate=()=>{
+      if(revoked)return;
+      revoked=true;
+      setUser(null);setMyProfile(null);setFocused(null);
+      setNotice("Wallet account or network changed. Sign in again with Ultra EVM Testnet.");
+      void post("auth",{action:"logout"}).catch(()=>{});
+    };
+    const accountsChanged=(...params:unknown[])=>{
+      const accounts=params[0];
+      if(!Array.isArray(accounts)||typeof accounts[0]!=="string"||
+          accounts[0].toLowerCase()!==user.address.toLowerCase())invalidate();
+    };
+    const chainChanged=(...params:unknown[])=>{
+      if(!isLookeTestnetChain(params[0]))invalidate();
+    };
+    wallet.on("accountsChanged",accountsChanged);
+    wallet.on("chainChanged",chainChanged);
+    return ()=>{wallet.removeListener?.("accountsChanged",accountsChanged);
+      wallet.removeListener?.("chainChanged",chainChanged);};
+  },[user?.address]);
+  useEffect(()=>{
+    if(tab!=="profile"||!user?.address||!draftHandle.trim()){
+      setHandleFeedback("");return;
+    }
+    let alive=true;
+    setHandleFeedback("Checking @handle…");
+    const timer=window.setTimeout(()=>{
+      void get<{available:boolean;reason:string}>({action:"handle-status",handle:draftHandle})
+        .then(result=>{if(alive)setHandleFeedback(result.available?"@handle available":result.reason==="reserved"?"Reserved official @handle":"@handle already taken");})
+        .catch(e=>{if(alive)setHandleFeedback(errText(e));});
+    },400);
+    return ()=>{alive=false;window.clearTimeout(timer);};
+  },[tab,user?.address,draftHandle]);
   useEffect(()=>{void loadFeed();},[loadFeed]);
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);
@@ -262,7 +303,7 @@ export default function SocialPage(){
       const challenge=await post<{challengeId:string;message:string}>("auth",{action:"challenge",address:walletAddress});
       const signature=await wallet.request({method:"personal_sign",params:[challenge.message,walletAddress]});
       if(typeof signature!=="string")throw new Error("Wallet did not sign the challenge.");
-      await requireUltraEvmTestnet(wallet);
+      await assertActiveUltraEvmAccount(wallet,walletAddress);
       await post("auth",{action:"verify",challengeId:challenge.challengeId,signature});
       await refreshMe();
       await loadFeed();
@@ -367,7 +408,7 @@ export default function SocialPage(){
           <p>Posts reference assets; they do not verify holdings or represent investment advice.</p></div>
       </aside>
       <section className="social-main">
-        <div className="social-overline">M34 / FINAL END-TO-END ACCEPTANCE · NO-GO</div>
+        <div className="social-overline">M2 / ULTRA EVM WALLET IDENTITY · PROTECTED TESTNET PREVIEW</div>
         <div className="social-hero"><h1>{tab==="feed"?"People. Ideas. Culture.":tab==="discover"?"Find your people.":tab==="messages"?"Conversations.":tab==="activity"?"Your real activity.":tab==="analytics"?"Creator analytics.":tab==="points"?"Looke Points.":tab==="points-review"?"Points evidence review.":tab==="integrity"?"Account integrity.":tab==="backend"?"Backend verification.":tab==="security"?"Testnet & security.":tab==="beta"?"Protected Testnet beta.":tab==="acceptance"?"Controlled Testnet acceptance.":tab==="audit"?"Independent launch audit.":tab==="operations"?"Operator acceptance.":tab==="verification"?"External acceptance verification.":tab==="rehearsal"?"Protected release rehearsal.":tab==="real-evidence"?"Real independent evidence.":tab==="operator-evidence"?"Original operator evidence collection.":tab==="operator-run"?"Real operator acceptance prerequisites.":tab==="source-gates"?"Current source compatibility and blockers.":tab==="source-reconcile"?"Real database lineage reconciliation.":tab==="live-integrations"?"Live Ultra integration proof console.":tab==="final-acceptance"?"Final independent Testnet acceptance.":tab==="controls"?"Your account.":tab==="moderation"?"Review queue.":"Your identity."}</h1>
           <p>Share what you create. Discover the people shaping Ultra. All displayed activity comes from the Looke social database.</p></div>
         {backendStatus==="unconfigured"&&<div className="social-warning"><strong>Backend not ready.</strong> Social database or sign-in configuration is unavailable. No demo profiles or fake posts are shown.</div>}
@@ -516,6 +557,7 @@ export default function SocialPage(){
         </div>:user&&myProfile?<form className="social-card social-edit-profile" onSubmit={e=>void updateProfile(e)}>
           <h2>Creator profile</h2><p>Connected wallet: {user.address}. Only a signed-in wallet can change its own profile.</p>
           <label>Handle<input value={draftHandle} required maxLength={24} onChange={e=>setDraftHandle(e.target.value)}/></label>
+          <small role="status">{handleFeedback}</small>
           <label>Display name<input value={draftName} required maxLength={60} onChange={e=>setDraftName(e.target.value)}/></label>
           <label>Bio<textarea maxLength={240} value={draftBio} onChange={e=>setDraftBio(e.target.value)}/></label>
           <label>Avatar HTTPS URL (optional)<input value={draftAvatar} maxLength={500} onChange={e=>setDraftAvatar(e.target.value)}/></label>

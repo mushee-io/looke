@@ -1,0 +1,56 @@
+name: Final10 M2 wallet profiles and sessions
+on:
+  pull_request:
+
+jobs:
+  identity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: M2 adversarial selected-wallet and handle policy
+        run: npm run test:final-m2
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Production build with all release features closed
+        run: npm run build
+        env:
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M2_IDENTITY_WRITES_ENABLED: 'false'
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: looke_m2_ci
+          POSTGRES_USER: looke_m2
+          POSTGRES_PASSWORD: ci_only_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U looke_m2 -d looke_m2_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://looke_m2:ci_only_password@localhost:5432/looke_m2_ci
+      LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+      LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
+      LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+      LOOKE_PUBLIC_BETA_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Create genuine disposable social schema
+        run: npm run db:migrate
+      - name: Two-wallet signatures, profiles, isolation, replay, logout
+        run: npm run test:final-m2-db
