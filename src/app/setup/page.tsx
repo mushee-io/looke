@@ -141,6 +141,7 @@ export default function TestnetSetup(){
  <Link href="/">← Looke home</Link><h1>Ultra EVM Testnet launch</h1>
  <p>Deploy <code>LookeCoinFactory.sol</code> with an injected wallet in Remix, then configure its address and original deployment transaction as <code>NEXT_PUBLIC_LOOKE_FACTORY_ADDRESS</code> and <code>NEXT_PUBLIC_LOOKE_FACTORY_DEPLOY_TX</code>. Trading needs an existing genuine V2-compatible factory and router on chain 18881.</p>
  <p><strong>Wallet-only actions:</strong> each pair creation, approval and liquidity deposit needs your confirmation. No private keys, synthetic tokens, or automatic transactions.</p>
+ <section style={{padding:16,border:"1px solid #888",borderRadius:10}}><h2>Official LOOKE ecosystem token</h2><p>Deploy the fixed-supply 100,000,000 LOOKE token on Ultra EVM Testnet to your own wallet, independent of the creator coin factory.</p><Link href="/setup/looke">Deploy official LOOKE token →</Link></section>
  <section><h2>Deploy Looke creator coin factory</h2>
  <p>Build <code>contracts/LookeCoinFactory.sol</code> using the reviewed Foundry project. Upload its local compiler artifact from <code>out/LookeCoinFactory.sol/LookeCoinFactory.json</code>. The source stays on your computer; only your wallet signs the deployment to chain 18881.</p>
  <label>Foundry compiled artifact JSON <input type="file" accept=".json" onChange={e=>void importFactoryArtifact(e.target.files?.[0])}/></label>
