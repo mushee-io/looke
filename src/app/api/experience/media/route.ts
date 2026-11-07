@@ -85,11 +85,11 @@ export async function POST(request:NextRequest){
 }
 
 /** Unprivileged readiness signal; never return Cloudinary API credentials. */
-export async function GET(request?:NextRequest){
- const intent=request?.nextUrl.searchParams.get("intentId");
+export async function GET(request:NextRequest){
+ const intent=request.nextUrl.searchParams.get("intentId");
  if(intent){
    try{
-     const actor=(await requireViewer(request!)).address;
+     const actor=(await requireViewer(request)).address;
      const id=uploadId.parse(intent);
      const evidence=await query<{
        id:string;kind:string;mime:string;declared_bytes:number;state:string;
