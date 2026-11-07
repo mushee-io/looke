@@ -1,0 +1,97 @@
+name: Final10 M9 independent acceptance and non-mutating restore readiness
+on:
+  pull_request:
+jobs:
+  security-and-release-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: M9 immutable NO-GO gates, source spoof and rollback negative paths
+        run: npm run test:final-m9
+      - name: Strict full TypeScript and server route checks
+        run: npm run typecheck
+      - name: Protected Next production build, all source writes and financial approvals disabled
+        run: npm run build
+        env:
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M2_IDENTITY_WRITES_ENABLED: 'false'
+          LOOKE_M3_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M4_CREATOR_MEDIA_WRITES_ENABLED: 'false'
+          LOOKE_M5_MESSAGE_REQUEST_WRITES_ENABLED: 'false'
+          LOOKE_M6_CREATOR_PREVIEW_WRITES_ENABLED: 'false'
+          LOOKE_M7_MARKET_REVIEW_WRITES_ENABLED: 'false'
+          LOOKE_M7_OPERATOR_SOURCE_APPROVED: 'false'
+          LOOKE_M8_GAME_IMPORT_STAGE_ENABLED: 'false'
+          LOOKE_M8_SOURCE_AUDIT_APPROVED: 'false'
+          LOOKE_M9_OPERATOR_READS_ENABLED: 'false'
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
+          LOOKE_M4_TRADING_ENABLED: 'false'
+          LOOKE_POINTS_ACCOUNTING_ENABLED: 'false'
+  actual-disposable-postgres-and-restore-diff:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: looke_m9_ci
+          POSTGRES_USER: looke_m9
+          POSTGRES_PASSWORD: ci_only_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U looke_m9 -d looke_m9_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://looke_m9:ci_only_password@localhost:5432/looke_m9_ci
+      LOOKE_M9_TEST_RESTORE_URL: postgres://looke_m9:ci_only_password@localhost:5432/looke_m9_restore_ci
+      LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+      LOOKE_M9_OPERATOR_READS_ENABLED: 'false'
+      LOOKE_PUBLIC_BETA_ENABLED: 'false'
+      LOOKE_M4_TRADING_ENABLED: 'false'
+      LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+      LOOKE_POINTS_ACCOUNTING_ENABLED: 'false'
+      LOOKE_M7_OPERATOR_SOURCE_APPROVED: 'false'
+      LOOKE_M8_GAME_IMPORT_STAGE_ENABLED: 'false'
+      LOOKE_M8_SOURCE_AUDIT_APPROVED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Create second isolated PostgreSQL database for CI-only restoration controls
+        env:
+          PGPASSWORD: ci_only_password
+        run: createdb -h localhost -p 5432 -U looke_m9 looke_m9_restore_ci
+      - name: Apply all existing 001–015 migrations to CI source ONLY
+        run: npm run db:migrate
+      - name: Apply identical migrations to separate disposable CI comparison database ONLY
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgres://looke_m9:ci_only_password@localhost:5432/looke_m9_restore_ci
+      - name: Align only disposable 007 checkpoint seed across two CI snapshots
+        env:
+          PGPASSWORD: ci_only_password
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -h localhost -U looke_m9 -d looke_m9_restore_ci -v ON_ERROR_STOP=1 -c "DELETE FROM social_index_checkpoints WHERE stream='creator_activity'"
+          pg_dump -h localhost -U looke_m9 -d looke_m9_ci --data-only --column-inserts --table=public.social_index_checkpoints \
+            | psql -h localhost -U looke_m9 -d looke_m9_restore_ci -v ON_ERROR_STOP=1
+      - name: Signed ephemeral wallets, owner-only source reads and full-row drift detection
+        run: npm run test:final-m9-db
+  solidity-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Compile existing Ultra creator contracts without deployment
+        run: forge build
+      - name: All original Solidity factory and replay security regressions
+        run: forge test -vv
