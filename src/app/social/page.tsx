@@ -172,7 +172,7 @@ export default function SocialPage(){
       if(!verify.ok||!proof.confirmed||proof.intentId!==auth.intentId)
         throw new Error(proof.error||"Provider verification did not complete.");
       setMediaUploadId(proof.intentId);
-      setMediaUploadStatus("Upload verified. It will be hidden from the public feed until moderator approval.");
+      setMediaUploadStatus("Original provider record verified. Upload proof is wallet-scoped; the attached post stays hidden until moderator approval.");
     }catch(error){
       setMediaUploadId(null);
       setMediaUploadStatus(errText(error));
@@ -408,7 +408,7 @@ export default function SocialPage(){
           <p>Posts reference assets; they do not verify holdings or represent investment advice.</p></div>
       </aside>
       <section className="social-main">
-        <div className="social-overline">M3 / CREATOR FEED · ULTRA EVM TESTNET · PROTECTED PREVIEW</div>
+        <div className="social-overline">M4 / SECURE CREATOR STUDIO · ULTRA EVM TESTNET · PROTECTED PREVIEW</div>
         <div className="social-hero"><h1>{tab==="feed"?"People. Ideas. Culture.":tab==="discover"?"Find your people.":tab==="messages"?"Conversations.":tab==="activity"?"Your real activity.":tab==="analytics"?"Creator analytics.":tab==="points"?"Looke Points.":tab==="points-review"?"Points evidence review.":tab==="integrity"?"Account integrity.":tab==="backend"?"Backend verification.":tab==="security"?"Testnet & security.":tab==="beta"?"Protected Testnet beta.":tab==="acceptance"?"Controlled Testnet acceptance.":tab==="audit"?"Independent launch audit.":tab==="operations"?"Operator acceptance.":tab==="verification"?"External acceptance verification.":tab==="rehearsal"?"Protected release rehearsal.":tab==="real-evidence"?"Real independent evidence.":tab==="operator-evidence"?"Original operator evidence collection.":tab==="operator-run"?"Real operator acceptance prerequisites.":tab==="source-gates"?"Current source compatibility and blockers.":tab==="source-reconcile"?"Real database lineage reconciliation.":tab==="live-integrations"?"Live Ultra integration proof console.":tab==="final-acceptance"?"Final independent Testnet acceptance.":tab==="controls"?"Your account.":tab==="moderation"?"Review queue.":"Your identity."}</h1>
           <p>Share what you create. Discover the people shaping Ultra. Posts, replies, likes, follows and notifications are sourced from real Looke PostgreSQL records, never generated activity.</p></div>
         {backendStatus==="unconfigured"&&<div className="social-warning"><strong>Backend not ready.</strong> Social database or sign-in configuration is unavailable. No demo profiles or fake posts are shown.</div>}
@@ -433,6 +433,8 @@ export default function SocialPage(){
                 {mediaBusy?"Uploading / verifying…":mediaUploadId?"Provider verified ✓":mediaServiceReady?"Upload file for moderator review ↗":"Upload for review (hosting not enabled)"}
               </button>}
               {mediaUploadStatus&&<p role="status">{mediaUploadStatus}</p>}
+              {mediaUploadId&&<a href={"/api/experience/media?intentId="+encodeURIComponent(mediaUploadId)}
+                target="_blank" rel="noopener noreferrer">View your upload evidence ↗</a>}
               {!mediaServiceReady&&<p role="status">Secure uploads require a configured hosted-media provider and approved moderation.</p>}
               <p>Files are transferred only when you press Upload. An authorized hosting provider and operator moderation must be configured. Your file is not publicized on Looke before approval.</p>
             </div>
@@ -443,7 +445,7 @@ export default function SocialPage(){
               {assetType!=="none"&&<input aria-label="Asset identifier" required placeholder="0x Ultra EVM creator token address" value={assetId} onChange={e=>setAssetId(e.target.value)}/>}
               <button type="submit" disabled={working||!newPost.trim()||mediaBusy||(!!selectedMedia&&!mediaUploadId)}>Publish →</button>
             </div>
-            <small>Public, plain-text posts · No financial transaction or signature required after sign-in.</small>
+            <small>Text posts are public after publication; verified hosted media remains hidden pending moderator approval. No financial transaction or token issuance is performed.</small>
           </form>}
           {!user&&<div className="social-signin-note">Sign in with your Ultra EVM Testnet wallet to create a profile, post, comment or follow creators.</div>}
           <div className="lk-m15-social-search"><span aria-hidden="true">⌕</span>

@@ -21,6 +21,8 @@ jobs:
         run: npm run test:final-m2
       - name: M3 strictly scoped social write gates and text-only policy
         run: npm run test:final-m3
+      - name: M4 Cloudinary receipt validation, media gate and safe creator drafts
+        run: npm run test:final-m4
       - run: npm run typecheck
       - run: npm run build
       - name: M34 protected end-to-end acceptance smoke and POST denial
@@ -134,6 +136,21 @@ jobs:
           LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
           LOOKE_SOCIAL_WRITES_ENABLED: 'false'
           LOOKE_PUBLIC_BETA_ENABLED: 'false'
+      - name: M4 one-use owner-bound provider uploads, moderation audit and hidden-media PostgreSQL acceptance
+        run: npm run test:final-m4-db
+        env:
+          DATABASE_URL: postgres://looke_ci:ci_only_password@localhost:5432/looke_social_ci
+          LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+          LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
+          LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
+          LOOKE_M4_CREATOR_MEDIA_WRITES_ENABLED: 'true'
+          LOOKE_M4_MEDIA_MODERATION_WRITES_ENABLED: 'true'
+          LOOKE_MEDIA_UPLOADS_ENABLED: 'true'
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
+          LOOKE_CLOUDINARY_CLOUD_NAME: looke-ci
+          LOOKE_CLOUDINARY_API_KEY: '12345678901234'
+          LOOKE_CLOUDINARY_API_SECRET: 'ci-placeholder-only-no-real-provider-key-12345'
       - name: Verify media moderation approval visibility and SQL constraints (disposable DB)
         run: npm run test:m15-db
         env:
