@@ -83,7 +83,9 @@
     "test:final-m6": "node --import tsx --test tests/final10-m6.test.ts",
     "test:final-m6-db": "node --import tsx --test tests/final10-m6-db.integration.ts",
     "test:final-m7": "node --import tsx --test tests/final10-m7.test.ts",
-    "test:final-m7-db": "node --import tsx --test tests/final10-m7-db.integration.ts"
+    "test:final-m7-db": "node --import tsx --test tests/final10-m7-db.integration.ts",
+    "test:final-m8": "node --import tsx --test tests/final10-m8.test.ts",
+    "test:final-m8-db": "node --import tsx --test tests/final10-m8-db.integration.ts"
   },
   "dependencies": {
     "next": "^15.5.0",
