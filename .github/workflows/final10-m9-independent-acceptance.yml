@@ -75,6 +75,15 @@ jobs:
         run: npm run db:migrate
         env:
           DATABASE_URL: postgres://looke_m9:ci_only_password@localhost:5432/looke_m9_restore_ci
+      - name: Align only disposable 007 checkpoint seed across two CI snapshots
+        env:
+          PGPASSWORD: ci_only_password
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -h localhost -U looke_m9 -d looke_m9_restore_ci -v ON_ERROR_STOP=1 -c "DELETE FROM social_index_checkpoints WHERE stream='creator_activity'"
+          pg_dump -h localhost -U looke_m9 -d looke_m9_ci --data-only --column-inserts --table=public.social_index_checkpoints \
+            | psql -h localhost -U looke_m9 -d looke_m9_restore_ci -v ON_ERROR_STOP=1
       - name: Signed ephemeral wallets, owner-only source reads and full-row drift detection
         run: npm run test:final-m9-db
   solidity-regression:
