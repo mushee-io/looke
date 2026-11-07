@@ -1,0 +1,81 @@
+name: Final10 M10 immutable final engineering and operator NO-GO
+on:
+  pull_request:
+jobs:
+  final-security-and-operator-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Adversarial M10 human-proof and immutable NO-GO regression
+        run: node --import tsx --test tests/final10-m10.test.ts
+      - name: Predecessor original-source and full-restore denial tests
+        run: npm run test:final-m9
+      - name: Full TypeScript
+        run: npm run typecheck
+      - name: Protected production build with write gates closed
+        run: npm run build
+        env:
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M4_TRADING_ENABLED: 'false'
+          LOOKE_POINTS_ACCOUNTING_ENABLED: 'false'
+          LOOKE_M9_OPERATOR_READS_ENABLED: 'false'
+  independent-disposable-postgresql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: looke_m10_ci
+          POSTGRES_USER: looke_m10
+          POSTGRES_PASSWORD: ephemeral_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U looke_m10 -d looke_m10_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://looke_m10:ephemeral_ci_only@localhost:5432/looke_m10_ci
+      LOOKE_M9_TEST_RESTORE_URL: postgres://looke_m10:ephemeral_ci_only@localhost:5432/looke_m10_restore_ci
+      LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+      LOOKE_M9_OPERATOR_READS_ENABLED: 'false'
+      LOOKE_PUBLIC_BETA_ENABLED: 'false'
+      LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+      LOOKE_POINTS_ACCOUNTING_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Create second disposable comparison database
+        env:
+          PGPASSWORD: ephemeral_ci_only
+        run: createdb -h localhost -U looke_m10 looke_m10_restore_ci
+      - run: npm run db:migrate
+      - run: npm run db:migrate
+        env:
+          DATABASE_URL: postgres://looke_m10:ephemeral_ci_only@localhost:5432/looke_m10_restore_ci
+      - name: Align only disposable migration checkpoint seed
+        env:
+          PGPASSWORD: ephemeral_ci_only
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -h localhost -U looke_m10 -d looke_m10_restore_ci -v ON_ERROR_STOP=1 -c "DELETE FROM social_index_checkpoints WHERE stream='creator_activity'"
+          pg_dump -h localhost -U looke_m10 -d looke_m10_ci --data-only --column-inserts --table=public.social_index_checkpoints | psql -h localhost -U looke_m10 -d looke_m10_restore_ci -v ON_ERROR_STOP=1
+      - name: Original M9 full-schema digest and adversarial drift regression, CI fixtures only
+        run: npm run test:final-m9-db
+  solidity-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge build
+      - run: forge test -vv
