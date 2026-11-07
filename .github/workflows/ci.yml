@@ -25,6 +25,8 @@ jobs:
         run: npm run test:final-m4
       - name: M5 offline sealed-envelope canonicalization, version and transport NO-GO
         run: npm run test:final-m5
+      - name: M6 unsigned creator plans, wallet-read-only preflight, on-chain-proof denial and safe metadata
+        run: npm run test:final-m6
       - run: npm run typecheck
       - run: npm run build
       - name: M34 protected end-to-end acceptance smoke and POST denial
@@ -162,6 +164,16 @@ jobs:
           LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
           LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
           LOOKE_M5_MESSAGE_REQUEST_WRITES_ENABLED: 'true'
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
+      - name: M6 signed test-wallet creator intent, per-wallet isolation, nonce constraints and no-deployment proof
+        run: npm run test:final-m6-db
+        env:
+          DATABASE_URL: postgres://looke_ci:ci_only_password@localhost:5432/looke_social_ci
+          LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+          LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
+          LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
+          LOOKE_M6_CREATOR_DRAFT_WRITES_ENABLED: 'true'
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
           LOOKE_PUBLIC_BETA_ENABLED: 'false'
       - name: Verify media moderation approval visibility and SQL constraints (disposable DB)
         run: npm run test:m15-db

@@ -6,7 +6,8 @@ import {TrendingFeed,MessagesPanel,NotificationsPanel,ProfilePanel} from "../com
 import {PointsDashboard} from "../components/experience/M19PointsDashboard";
 import {CreateCoinModal,WalletModal,type CoinQuickDraft} from "../components/experience/LookeOverlays";
 import "../components/experience/experience.css";
-import { isAddress } from "viem";
+import { isAddress,toHex } from "viem";
+import {reviewUnsignedM6Creator,reviewM6WalletAuthorization} from "../lib/experience/m6-creator";
 import { type CoinDraft, validateCoinDraft } from "../lib/metadata";
 import {connectUltraEvmWallet} from "../lib/ultra-evm-wallet";
 import {createUltraPublicClient,verifyFactoryDeployment} from "../lib/verification";
@@ -47,6 +48,7 @@ export default function Home() {
   const [walletBusy, setWalletBusy] = useState(false);
   const [draft, setDraft] = useState<CoinDraft>(emptyDraft);
   const [preview, setPreview] = useState<CoinDraft | null>(null);
+  const [m6Review,setM6Review]=useState<ReturnType<typeof reviewUnsignedM6Creator>|null>(null);
   const [notice, setNotice] = useState("");
   const [txHash, setTxHash] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -69,7 +71,7 @@ export default function Home() {
   }
   function reviewQuickDraft(coin:CoinQuickDraft){
     setDraft(current=>({...current,name:coin.name,symbol:coin.symbol}));
-    setChosenPair(coin.pair);setPreview(null);setTxHash("");
+    setChosenPair(coin.pair);setPreview(null);setM6Review(null);setTxHash("");
     setConfirmedCoin("");setTransactionStatus("idle");
     setShowCreate(false);setScreen("Create");
     setNotice("Draft prepared for "+coin.pair+" pairing. Neither liquidity pair is approved. A local image still needs publicly hosted metadata before review.");
@@ -140,6 +142,7 @@ export default function Home() {
   function updateDraft(key: keyof CoinDraft, value: string) {
     setDraft(current => ({ ...current, [key]: value }));
     setPreview(null);
+    setM6Review(null);
     setNotice("");
     setTxHash("");
     setTransactionStatus("idle");
@@ -160,6 +163,24 @@ export default function Home() {
       setPreview(null);
       setNotice(errorMessage(error));
     }
+  }
+
+  async function reviewM6WalletPlan(){
+    // Clicking here performs only EIP-1193 account/chain READS and unsigned
+    // calldata review. No permits, signatures, approvals or tx broadcasts.
+    const provider=injectedWallet();
+    if(!provider || !address){setNotice("Connect an Ultra EVM Testnet wallet first.");return;}
+    try{
+      const entropy=window.crypto.getRandomValues(new Uint8Array(32));
+      const plan=reviewUnsignedM6Creator({
+        name:draft.name,symbol:draft.symbol,description:draft.description,
+        imageURI:draft.image,metadataURI:draft.metadataURI,supply:draft.supply,
+        pair:chosenPair
+      },toHex(entropy));
+      await reviewM6WalletAuthorization(provider,address,plan);
+      setM6Review(plan);
+      setNotice("Unsigned M6 calldata reviewed for your selected Testnet account. No transaction or liquidity action was initiated.");
+    }catch(error){setM6Review(null);setNotice(errorMessage(error));}
   }
 
   async function launchCoin() {
@@ -239,6 +260,18 @@ export default function Home() {
                 </form>
                 <div className="preview-panel"><span className="overline">LIVE DRAFT PREVIEW</span><div className="preview-art"><span>✳</span></div><div className="preview-meta"><div><h3>{preview?.name || draft.name || "Your coin"}</h3><p>${preview?.symbol || draft.symbol || "TOKEN"}</p></div><span className="pill">FIXED SUPPLY</span></div><p>{preview?.description || draft.description || "Your creation starts here."}</p><div className="preview-data"><span>SUPPLY</span><strong>{preview?.supply || "—"}</strong></div><div className="preview-data"><span>NETWORK</span><strong>Ultra EVM · 18881</strong></div><div className="preview-data"><span>FACTORY</span><strong>{factoryStatus === "verified" ? shortAddress(LOOKE_FACTORY_ADDRESS) : "Not verified"}</strong></div>
                   <div className="preview-data"><span>DEPLOYMENT PROOF</span><strong>{factoryStatus === "verified" ? "Verified · 2+ confirmations" : factoryStatus === "checking" ? "Checking testnet receipt…" : "Not available"}</strong></div>
+                  <button type="button" className="secondary" onClick={()=>void reviewM6WalletPlan()}
+                    disabled={!preview||!address||!onUltra}>
+                    Review unsigned M6 wallet plan (no send) →
+                  </button>
+                  {m6Review&&<div className="disabled-reason" role="status">
+                    <p><strong>M6 preview only — not deployable.</strong> Pair preference: {m6Review.pair}.
+                      No liquidity pool is deployed or verified.</p>
+                    <p>App creation fee: 0 UOS. Network gas fee: not estimated; your wallet must disclose it separately
+                      before any independently approved future transaction.</p>
+                    <p>Unsigned calldata hash: <code>{m6Review.calldataHash}</code></p>
+                    <p>Factory and asset contracts are not approved. No wallet signature, asset approval, or transaction was requested.</p>
+                  </div>}
                   <button className="launch-button"
                     disabled={true /* No approved LOOKE/ULTRA pairing; prevent unpaired launch. */}
                     onClick={launchCoin}>
