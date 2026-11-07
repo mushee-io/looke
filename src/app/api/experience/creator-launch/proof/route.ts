@@ -28,9 +28,9 @@ export async function GET(req:NextRequest){
   const row=await query<{
    name:string;symbol:string;metadata_uri:string;supply_tokens:string;
    quote_preference:"ULTRA"|"LOOKE";client_nonce:string;expires_at:Date
-  }>(\`SELECT name,symbol,metadata_uri,supply_tokens,quote_preference,
+  }>(`SELECT name,symbol,metadata_uri,supply_tokens,quote_preference,
       client_nonce,expires_at FROM social_creator_deployment_previews
-    WHERE id=$1 AND owner=$2\`,[previewId,account]);
+    WHERE id=$1 AND owner=$2`,[previewId,account]);
   if(row.rowCount!==1)return NextResponse.json({status:"not-found",reason:"No wallet-owned original deployment preview."},{status:404,headers});
   const input=row.rows[0];
   // Revalidate original values and always bind chain evidence to owner.

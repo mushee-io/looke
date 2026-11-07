@@ -57,9 +57,9 @@ export type M6Preview=ReturnType<typeof validateM6CreatorPreview>;
  */
 export async function prepareM6WalletReview(
  wallet:UltraEvmWalletProvider,expectedOwner:string,
- reviewed:M6Preview,verifiedFactory:{address:\`0x\${string}\`;verified:true},
+ reviewed:M6Preview,verifiedFactory:{address:`0x${string}`;verified:true},
  onchainNonce:bigint,
-):Promise<{to:\`0x\${string}\`;from:\`0x\${string}\`;data:\`0x\${string}\`;value:"0x0";chainId:18881;broadcasted:false;feeWei:"0"}>{
+):Promise<{to:`0x${string}`;from:`0x${string}`;data:`0x${string}`;value:"0x0";chainId:18881;broadcasted:false;feeWei:"0"}>{
  const account=await assertActiveUltraEvmAccount(wallet,expectedOwner);
  if(reviewed.chainId!==18881||!verifiedFactory.verified||onchainNonce<0n)
    throw new Error("Unverified Ultra EVM Testnet deployment context.");
