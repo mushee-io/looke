@@ -1,6 +1,7 @@
 import {createHash,randomUUID} from "node:crypto";
 import {z} from "zod";
 import type {MediaKind,MediaReference} from "./media";
+import {m4MediaWritesEnabled} from "./m4-creator";
 
 /** Provider-backed direct uploads. Secrets are never exposed in the browser. */
 export const uploadDraft=z.object({
@@ -24,7 +25,7 @@ export type UploadProviderConfig={
 };
 export function uploadEnabled():boolean{
  return process.env.LOOKE_MEDIA_UPLOADS_ENABLED==="true" &&
-   process.env.LOOKE_SOCIAL_WRITES_ENABLED==="true";
+   (process.env.LOOKE_SOCIAL_WRITES_ENABLED==="true" || m4MediaWritesEnabled());
 }
 export function uploadConfig():UploadProviderConfig{
  const cloudName=process.env.LOOKE_CLOUDINARY_CLOUD_NAME??"";
@@ -68,6 +69,7 @@ export function createUploadAuthorization(
 export type ProviderAsset={
  public_id:string;asset_id:string;resource_type:string;
  secure_url:string;bytes:number;format:string;type:string;
+ created_at?:string;version?:number;
 };
 export function verifyProviderAsset(input:{
  config:UploadProviderConfig;asset:ProviderAsset;publicId:string;
@@ -88,11 +90,13 @@ export function verifyProviderAsset(input:{
  let u:URL;
  try{u=new URL(asset.secure_url);}catch{throw new Error("Provider returned an invalid media URL.");}
  const root="/"+config.cloudName+"/"+draft.kind+"/upload/";
- if(u.origin!=="https://res.cloudinary.com"||!u.pathname.startsWith(root)||
-   !u.pathname.includes("/"+publicId+".")||u.username||u.password||
-   u.search||u.hash||u.port)
-   throw new Error("Provider media URL has an unapproved source or asset path.");
- if(!u.pathname.endsWith("."+asset.format))throw new Error("Provider format/URL mismatch.");
+ const tail=u.pathname.startsWith(root)?u.pathname.slice(root.length):"";
+ if(u.origin!=="https://res.cloudinary.com"||u.username||u.password||
+   u.search||u.hash||u.port||
+   !/^v[1-9][0-9]*\//.test(tail)||
+   !tail.endsWith("/"+publicId+"."+asset.format)||
+   tail.slice(tail.indexOf("/")+1)!==publicId+"."+asset.format)
+   throw new Error("Provider media URL has an unapproved source, version, asset path or format.");
  return {url:u.href,kind:draft.kind};
 }
 /** A server-to-server authenticated inspection; browser result alone is never proof. */
@@ -106,4 +110,17 @@ export async function fetchProviderAsset(
  });
  if(!res.ok)throw new Error("Provider did not confirm this uploaded media asset.");
  return await res.json() as ProviderAsset;
+}
+
+/** For M4 signed upload confirmation, compare original provider creation receipt
+ * to the DB-authorized time window. This is server-to-server metadata verification,
+ * not a cryptographic provider signature or independent human approval.
+ */
+export function verifyM4ProviderReceipt(asset:ProviderAsset,issuedAt:Date,expiresAt:Date):void{
+ const timestamp=typeof asset.created_at==="string"?Date.parse(asset.created_at):NaN;
+ const lower=new Date(issuedAt).getTime()-120_000;
+ const upper=new Date(expiresAt).getTime()+120_000;
+ if(!Number.isFinite(timestamp)||timestamp<lower||timestamp>upper||
+   !Number.isSafeInteger(asset.version)||Number(asset.version)<1)
+   throw new Error("Provider receipt timestamp/version does not match the authorized upload window.");
 }

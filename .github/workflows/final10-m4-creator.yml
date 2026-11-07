@@ -1,0 +1,69 @@
+name: Final10 M4 verified creator media and safe drafts
+
+on:
+  pull_request:
+
+jobs:
+  creator-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: M4 provider receipt, metadata and fail-closed flag unit tests
+        run: npm run test:final-m4
+      - name: Full TypeScript typecheck
+        run: npm run typecheck
+      - name: Production-safe build without feature activation
+        run: npm run build
+        env:
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M2_IDENTITY_WRITES_ENABLED: 'false'
+          LOOKE_M3_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M4_CREATOR_MEDIA_WRITES_ENABLED: 'false'
+          LOOKE_M4_MEDIA_MODERATION_WRITES_ENABLED: 'false'
+          LOOKE_MEDIA_UPLOADS_ENABLED: 'false'
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
+          LOOKE_POINTS_ACCOUNTING_ENABLED: 'false'
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: looke_m4_ci
+          POSTGRES_USER: looke_m4
+          POSTGRES_PASSWORD: ci_only_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U looke_m4 -d looke_m4_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://looke_m4:ci_only_password@localhost:5432/looke_m4_ci
+      LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+      LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+      LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
+      LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
+      LOOKE_M4_CREATOR_MEDIA_WRITES_ENABLED: 'true'
+      LOOKE_M4_MEDIA_MODERATION_WRITES_ENABLED: 'true'
+      LOOKE_MEDIA_UPLOADS_ENABLED: 'true'
+      LOOKE_PUBLIC_BETA_ENABLED: 'false'
+      LOOKE_CLOUDINARY_CLOUD_NAME: looke-ci
+      LOOKE_CLOUDINARY_API_KEY: '12345678901234'
+      LOOKE_CLOUDINARY_API_SECRET: 'ci-placeholder-only-no-real-provider-key-12345'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Create disposable current social PostgreSQL schema
+        run: npm run db:migrate
+      - name: Signed CI-wallet media, mocked provider API, hidden posts, moderation and audit
+        run: npm run test:final-m4-db

@@ -6,6 +6,7 @@ import { query, rateLimit, socialDb } from "../../../lib/social/db";
 import {uploadId,uploadEnabled} from "../../../lib/social/upload-provider";
 import {handlePolicy} from "../../../lib/social/m2-identity";
 import {canWriteSocialAction,requireM3TextOnlyPost,M3TextOnlyError} from "../../../lib/social/m3-social-access";
+import {m4MediaWritesEnabled,m4ModerationWritesEnabled,m4AllowsModerationAction} from "../../../lib/social/m4-creator";
 import { z } from "zod";
 
 export const runtime="nodejs";
@@ -184,6 +185,8 @@ async function moderate(actor:string,input:Record<string,unknown>){
     reason:z.string().trim().min(8).max(500),
   });
   const data=schema.parse(input);
+  if(!writesEnabled()&&!m4AllowsModerationAction(data.operation))
+    throw new HttpError(503,"Media moderation needs independent M4 authorization.");
   const id=data.operation.includes("profile")?address.parse(data.targetId):uuid.parse(data.targetId);
   if(id===actor)throw new HttpError(403,"Moderators may not suspend their own wallet.");
   const map:{
@@ -198,17 +201,33 @@ async function moderate(actor:string,input:Record<string,unknown>){
     approve_media:{sql:"UPDATE social_posts SET media_status='approved' WHERE id=$1 AND media_url IS NOT NULL AND media_status='pending' AND hidden=false AND deleted_at IS NULL RETURNING id"},
     reject_media:{sql:"UPDATE social_posts SET media_status='rejected' WHERE id=$1 AND media_url IS NOT NULL AND media_status='pending' RETURNING id"},
   };
+  let auditId:string|null=null;
   const conn=await socialDb().connect();
   try{
     await conn.query("BEGIN");
+    // M4 media approval requires a genuine one-use original provider proof
+    // stored against the same author's attached post. Do not infer approval
+    // from a browser URL or an unaudited imported historical record.
+    if(!writesEnabled()&&m4ModerationWritesEnabled()&&data.operation==="approve_media"){
+      const proof=await conn.query(`
+        SELECT u.id FROM social_media_uploads u JOIN social_posts p ON p.id=u.post_id
+        WHERE p.id=$1 AND u.owner=p.author AND u.state='attached'
+          AND u.verified_at IS NOT NULL AND u.provider_asset_id IS NOT NULL
+          AND u.verified_url=p.media_url AND p.media_status='pending'
+          AND p.hidden=false AND p.deleted_at IS NULL FOR UPDATE OF u,p
+      `,[id]);
+      if(proof.rowCount!==1)throw new HttpError(409,"Original provider verification is required before moderation.");
+    }
     const changed=await conn.query(map[data.operation].sql,[id]);
     if(changed.rowCount!==1)throw new HttpError(404,"Moderation target not found.");
-    await conn.query(`INSERT INTO social_moderation_audit(moderator,action,target_id,reason) VALUES($1,$2,$3,$4)`,
+    const audit=await conn.query<{id:string}>(`INSERT INTO social_moderation_audit(moderator,action,target_id,reason)
+       VALUES($1,$2,$3,$4) RETURNING id`,
       [actor,data.operation,id,data.reason]);
+    auditId=audit.rows[0].id;
     await conn.query("COMMIT");
   }catch(error){await conn.query("ROLLBACK");throw error;}
   finally{conn.release();}
-  return {ok:true,audited:true};
+  return {ok:true,audited:true,auditId};
 }
 
 export async function POST(req:NextRequest){
@@ -219,7 +238,9 @@ export async function POST(req:NextRequest){
     if(action==="message" || action==="conversation")throw new HttpError(501,"DM sending is disabled until independently reviewed end-to-end encryption and key recovery are available.");
     if(action==="profile"){
       if(!identityWritesEnabled())throw new HttpError(503,"Looke identity writes are disabled pending operator approval.");
-    }else if(!canWriteSocialAction(action))throw new HttpError(503,"Social writes are disabled until database and moderation checks pass.");
+    }else if(!canWriteSocialAction(action) &&
+      !(action==="moderate"&&m4ModerationWritesEnabled()))
+      throw new HttpError(503,"Social writes are disabled until database and moderation checks pass.");
     const active=await requireViewer(req),actor=active.address;
     if(action==="profile"){
       await rateLimit(actor,"profile",10,3600);
@@ -237,8 +258,13 @@ export async function POST(req:NextRequest){
       const v=post.parse({body:input.body,asset:input.asset??null,media:input.media??null});
       // M3 enables only plain-text posts; publishing token references or media
       // still needs separately reviewed M4/M6 permissions and a real provider.
-      try{requireM3TextOnlyPost({asset:v.asset,media:v.media,mediaUploadId:input.mediaUploadId});}
-      catch(error){
+      try{
+        // M4 separately permits one real verified upload intent only. Raw
+        // metadata URLs and ERC-20 asset references remain forbidden.
+        if(!writesEnabled() && m4MediaWritesEnabled() && v.asset===null && v.media===null){
+          // Attachment lookup and consumption below remain owner-bound and atomic.
+        }else requireM3TextOnlyPost({asset:v.asset,media:v.media,mediaUploadId:input.mediaUploadId});
+      }catch(error){
         if(error instanceof M3TextOnlyError)throw new HttpError(403,error.message);
         throw error;
       }
