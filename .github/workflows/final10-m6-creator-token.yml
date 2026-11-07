@@ -1,0 +1,75 @@
+name: Final10 M6 Ultra creator factory and owner-scoped token proofs
+on:
+  pull_request:
+jobs:
+  creator-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: M6 strict immutable metadata, wallet-only unsigned review and original receipt verifier
+        run: npm run test:final-m6
+      - name: TypeScript strict safety checks
+        run: npm run typecheck
+      - name: Production-safe build (no financial action)
+        run: npm run build
+        env:
+          LOOKE_M6_CREATOR_PREVIEW_WRITES_ENABLED: 'false'
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M2_IDENTITY_WRITES_ENABLED: 'false'
+          LOOKE_M3_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M4_CREATOR_MEDIA_WRITES_ENABLED: 'false'
+          LOOKE_M5_MESSAGE_REQUEST_WRITES_ENABLED: 'false'
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
+          LOOKE_M4_TRADING_ENABLED: 'false'
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Compile M6 Solidity with no deployment
+        run: forge build
+      - name: Test nonce replay, distinct wallets, supply and declared zero fee
+        run: forge test --match-contract LookeFinal10M6Test -vv
+      - name: All existing contract regressions
+        run: forge test -vv
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: looke_m6_ci
+          POSTGRES_USER: looke_m6
+          POSTGRES_PASSWORD: ci_only_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U looke_m6 -d looke_m6_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://looke_m6:ci_only_password@localhost:5432/looke_m6_ci
+      LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+      LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+      LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
+      LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
+      LOOKE_M4_CREATOR_MEDIA_WRITES_ENABLED: 'false'
+      LOOKE_M5_MESSAGE_REQUEST_WRITES_ENABLED: 'false'
+      LOOKE_M6_CREATOR_PREVIEW_WRITES_ENABLED: 'true'
+      LOOKE_PUBLIC_BETA_ENABLED: 'false'
+      LOOKE_M4_TRADING_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Create disposable social schema only
+        run: npm run db:migrate
+      - name: M6 two independent signed wallets, nonce replay, owner-only drafts, NO-GO proof
+        run: npm run test:final-m6-db
