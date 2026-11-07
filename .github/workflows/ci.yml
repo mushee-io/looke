@@ -23,6 +23,8 @@ jobs:
         run: npm run test:final-m3
       - name: M4 Cloudinary receipt validation, media gate and safe creator drafts
         run: npm run test:final-m4
+      - name: M5 offline sealed-envelope canonicalization, version and transport NO-GO
+        run: npm run test:final-m5
       - run: npm run typecheck
       - run: npm run build
       - name: M34 protected end-to-end acceptance smoke and POST denial
@@ -151,6 +153,16 @@ jobs:
           LOOKE_CLOUDINARY_CLOUD_NAME: looke-ci
           LOOKE_CLOUDINARY_API_KEY: '12345678901234'
           LOOKE_CLOUDINARY_API_SECRET: 'ci-placeholder-only-no-real-provider-key-12345'
+      - name: M5 signed request permissions, owner notifications and replay uniqueness
+        run: npm run test:final-m5-db
+        env:
+          DATABASE_URL: postgres://looke_ci:ci_only_password@localhost:5432/looke_social_ci
+          LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
+          LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
+          LOOKE_M5_MESSAGE_REQUEST_WRITES_ENABLED: 'true'
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
       - name: Verify media moderation approval visibility and SQL constraints (disposable DB)
         run: npm run test:m15-db
         env:

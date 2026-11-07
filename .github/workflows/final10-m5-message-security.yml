@@ -1,0 +1,63 @@
+name: Final10 M5 private messaging security foundation
+
+on:
+  pull_request:
+
+jobs:
+  message-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: M5 offline canonical envelopes, replay hashes, key versions and all transport gates closed
+        run: npm run test:final-m5
+      - name: TypeScript strict typecheck
+        run: npm run typecheck
+      - name: Production build with all social and messaging writes closed
+        run: npm run build
+        env:
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M2_IDENTITY_WRITES_ENABLED: 'false'
+          LOOKE_M3_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M4_CREATOR_MEDIA_WRITES_ENABLED: 'false'
+          LOOKE_MEDIA_UPLOADS_ENABLED: 'false'
+          LOOKE_M5_MESSAGE_REQUEST_WRITES_ENABLED: 'false'
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: looke_m5_ci
+          POSTGRES_USER: looke_m5
+          POSTGRES_PASSWORD: ci_only_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U looke_m5 -d looke_m5_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://looke_m5:ci_only_password@localhost:5432/looke_m5_ci
+      LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+      LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+      LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
+      LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
+      LOOKE_M5_MESSAGE_REQUEST_WRITES_ENABLED: 'true'
+      LOOKE_PUBLIC_BETA_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Apply genuine disposable PostgreSQL schema (never user source)
+        run: npm run db:migrate
+      - name: M5 signed sessions, request permissions, private notifications, blocked accounts and nonce replay
+        run: npm run test:final-m5-db
