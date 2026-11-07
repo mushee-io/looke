@@ -58,3 +58,20 @@ test("activated release flags remain NO-GO even with all externally submitted re
  assert.equal(p.releaseDecision,"NO_GO");assert.equal(p.m9Blocked,16);
  assert.equal(p.productionPromotionAllowed,false);assert.equal(p.publicBetaEnabled,false);
 });
+
+test("owner may authorize public Ultra EVM Testnet Preview access without inventing security evidence",()=>{
+ const p=assessFinal10M10({env:{...closed,VERCEL_ENV:"preview",LOOKE_PUBLIC_BETA_ENABLED:"true"},
+  observedProductionDeploymentId:M10_EXPECTED_PRODUCTION_DEPLOYMENT});
+ assert.equal(p.publicTestnetAccessAuthorized,true);
+ assert.equal(p.releaseDecision,"TESTNET_GO");
+ assert.equal(p.betaReady,false);
+ assert.equal(p.independentHumanSignaturesVerified,0);
+ assert.equal(p.independentExternalAuditApproved,false);
+ assert.equal(p.financialBroadcastAllowed,false);
+ assert.equal(p.tokenIssuanceAllowed,false);
+ assert.equal(p.mainnetDeploymentAllowed,false);
+ const prod=assessFinal10M10({env:{...closed,VERCEL_ENV:"production",LOOKE_PUBLIC_BETA_ENABLED:"true"}});
+ assert.equal(prod.releaseDecision,"NO_GO");
+ const unapproved=assessFinal10M10({env:{...closed,VERCEL_ENV:"preview",LOOKE_PUBLIC_BETA_ENABLED:"false"}});
+ assert.equal(unapproved.releaseDecision,"NO_GO");
+});
