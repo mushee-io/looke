@@ -84,11 +84,10 @@ test("M6 original factory and coin proofs reject mismatched hash, chain, fee, wa
  const topics=encodeEventTopics({abi:lookeM6FactoryAbi,eventName:"CreatorCoinCreated",
   args:{creator:owner,coin,creatorNonce:0n}});
  const nonIndexed=[
-  {name:"preference",type:"uint8"},{name:"name",type:"string"},
-  {name:"symbol",type:"string"},{name:"metadataURI",type:"string"},
+  {name:"preference",type:"uint8"},
   {name:"initialSupply",type:"uint256"},{name:"feeWei",type:"uint256"}
  ] as const;
- const data=encodeAbiParameters(nonIndexed,[0,preview.name,preview.symbol,preview.metadataURI,supply,0n]);
+ const data=encodeAbiParameters(nonIndexed,[0,supply,0n]);
  const coinReceipt={status:"success",transactionHash:hash,to:factory,from:owner,
   blockHash:hash,blockNumber:91n,logs:[{address:factory,topics,data}]};
  const tx={hash,to:factory,from:owner,value:0n,input:calldata,blockHash:hash};
@@ -101,6 +100,8 @@ test("M6 original factory and coin proofs reject mismatched hash, chain, fee, wa
   readContract:async({functionName}:{functionName:string})=>{
    if(functionName==="CREATION_FEE_WEI")return liveFee;
    if(functionName==="creator")return owner;
+   if(functionName==="name")return preview.name;
+   if(functionName==="symbol")return preview.symbol;
    if(functionName==="totalSupply"||functionName==="balanceOf")return supply;
    if(functionName==="metadataURI")return metadata;
    throw Error("Unexpected contract probe "+functionName);

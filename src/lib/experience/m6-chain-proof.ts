@@ -75,8 +75,7 @@ export async function verifyM6CoinReceipt(
   try{
    const d=decodeEventLog({abi:lookeM6FactoryAbi,topics:log.topics,data:log.data,strict:true});
    if(d.eventName!=="CreatorCoinCreated")continue;
-   if(getAddress(d.args.creator)!==signer||d.args.name!==name||d.args.symbol!==symbol||
-      d.args.metadataURI!==metadataURI||d.args.initialSupply!==supply||
+   if(getAddress(d.args.creator)!==signer||d.args.initialSupply!==supply||
       d.args.preference!==pair||d.args.creatorNonce!==nonce||d.args.feeWei!==0n)
       throw new Error("Original factory emission differs from submitted creator transaction.");
    matches.push({coin:getAddress(d.args.coin),creatorNonce:d.args.creatorNonce});
@@ -88,15 +87,18 @@ export async function verifyM6CoinReceipt(
  }
  if(matches.length!==1)throw new Error("Exactly one matching original M6 CreatorCoinCreated event is required.");
  const token=matches[0].coin;
- const [code,creator,totalSupply,balance,storedURI]=await Promise.all([
+ const [code,creator,totalSupply,balance,storedURI,storedName,storedSymbol]=await Promise.all([
   client.getBytecode({address:token}),
   client.readContract({address:token,abi:lookeCoinAbi,functionName:"creator"}),
   client.readContract({address:token,abi:lookeCoinAbi,functionName:"totalSupply"}),
   client.readContract({address:token,abi:lookeCoinAbi,functionName:"balanceOf",args:[signer]}),
   client.readContract({address:token,abi:lookeCoinAbi,functionName:"metadataURI"}),
+  client.readContract({address:token,abi:lookeCoinAbi,functionName:"name"}),
+  client.readContract({address:token,abi:lookeCoinAbi,functionName:"symbol"}),
  ]);
  if(!code||code==="0x"||getAddress(creator)!==signer||
-    totalSupply!==supply||balance!==supply||storedURI!==metadataURI)
+    totalSupply!==supply||balance!==supply||storedURI!==metadataURI||
+    storedName!==name||storedSymbol!==symbol)
     throw new Error("New coin runtime state is inconsistent with factory and wallet receipts.");
  return {status:"verified" as const,source:"original-ultra-evm-testnet" as const,
   transactionHash:hash,creator:signer,token,creatorNonce:nonce.toString(),

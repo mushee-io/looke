@@ -19,7 +19,6 @@ contract LookeM6CreatorFactory {
     event CreatorCoinCreated(
         address indexed creator, address indexed coin,
         uint256 indexed creatorNonce, QuotePreference preference,
-        string name, string symbol, string metadataURI,
         uint256 initialSupply, uint256 feeWei
     );
 
@@ -33,6 +32,19 @@ contract LookeM6CreatorFactory {
     ) external returns (address coin) {
         require(creatorNonces[msg.sender] == expectedNonce, "stale creator nonce");
         require(initialSupply > 0 && initialSupply <= MAX_SUPPLY, "supply outside limits");
+        _validate(name,symbol,metadataURI);
+        // Deliberately cannot receive native UOS: function is nonpayable.
+        // Nonce is recorded before the token constructor runs; revert rolls it back.
+        creatorNonces[msg.sender]=expectedNonce+1;
+        coin=address(new LookeCoin(name,symbol,metadataURI,msg.sender,initialSupply));
+        _coins.push(coin);
+        _createdBy[msg.sender].push(coin);
+        quotePreferenceOf[coin]=preference;
+        emit CreatorCoinCreated(
+            msg.sender,coin,expectedNonce,preference,initialSupply,CREATION_FEE_WEI
+        );
+    }
+    function _validate(string calldata name,string calldata symbol,string calldata metadataURI) private pure {
         bytes memory n=bytes(name);
         bytes memory ticker=bytes(symbol);
         bytes memory uri=bytes(metadataURI);
@@ -47,17 +59,6 @@ contract LookeM6CreatorFactory {
         for(uint256 i=0;i<uri.length;i++) {
             require(uint8(uri[i])>32 && uint8(uri[i])<127 && uri[i]!=0x5c, "invalid metadata characters");
         }
-        // Deliberately cannot receive native UOS: function is nonpayable.
-        // Nonce is recorded before the token constructor runs; revert rolls it back.
-        creatorNonces[msg.sender]=expectedNonce+1;
-        coin=address(new LookeCoin(name,symbol,metadataURI,msg.sender,initialSupply));
-        _coins.push(coin);
-        _createdBy[msg.sender].push(coin);
-        quotePreferenceOf[coin]=preference;
-        emit CreatorCoinCreated(
-            msg.sender,coin,expectedNonce,preference,
-            name,symbol,metadataURI,initialSupply,CREATION_FEE_WEI
-        );
     }
     function coinCount() external view returns(uint256){return _coins.length;}
     function coinsByCreator(address owner) external view returns(address[] memory){

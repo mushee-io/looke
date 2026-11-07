@@ -14,8 +14,6 @@ export const lookeM6FactoryAbi=[
    {name:"creator",type:"address",indexed:true},{name:"coin",type:"address",indexed:true},
    {name:"creatorNonce",type:"uint256",indexed:true},
    {name:"preference",type:"uint8",indexed:false},
-   {name:"name",type:"string",indexed:false},{name:"symbol",type:"string",indexed:false},
-   {name:"metadataURI",type:"string",indexed:false},
    {name:"initialSupply",type:"uint256",indexed:false},
    {name:"feeWei",type:"uint256",indexed:false}
   ]}
