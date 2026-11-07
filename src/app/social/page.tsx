@@ -408,7 +408,7 @@ export default function SocialPage(){
           <p>Posts reference assets; they do not verify holdings or represent investment advice.</p></div>
       </aside>
       <section className="social-main">
-        <div className="social-overline">M4 / SECURE CREATOR STUDIO · ULTRA EVM TESTNET · PROTECTED PREVIEW</div>
+        <div className="social-overline">M5 / PRIVATE MESSAGE SECURITY · ULTRA EVM TESTNET · PROTECTED PREVIEW</div>
         <div className="social-hero"><h1>{tab==="feed"?"People. Ideas. Culture.":tab==="discover"?"Find your people.":tab==="messages"?"Conversations.":tab==="activity"?"Your real activity.":tab==="analytics"?"Creator analytics.":tab==="points"?"Looke Points.":tab==="points-review"?"Points evidence review.":tab==="integrity"?"Account integrity.":tab==="backend"?"Backend verification.":tab==="security"?"Testnet & security.":tab==="beta"?"Protected Testnet beta.":tab==="acceptance"?"Controlled Testnet acceptance.":tab==="audit"?"Independent launch audit.":tab==="operations"?"Operator acceptance.":tab==="verification"?"External acceptance verification.":tab==="rehearsal"?"Protected release rehearsal.":tab==="real-evidence"?"Real independent evidence.":tab==="operator-evidence"?"Original operator evidence collection.":tab==="operator-run"?"Real operator acceptance prerequisites.":tab==="source-gates"?"Current source compatibility and blockers.":tab==="source-reconcile"?"Real database lineage reconciliation.":tab==="live-integrations"?"Live Ultra integration proof console.":tab==="final-acceptance"?"Final independent Testnet acceptance.":tab==="controls"?"Your account.":tab==="moderation"?"Review queue.":"Your identity."}</h1>
           <p>Share what you create. Discover the people shaping Ultra. Posts, replies, likes, follows and notifications are sourced from real Looke PostgreSQL records, never generated activity.</p></div>
         {backendStatus==="unconfigured"&&<div className="social-warning"><strong>Backend not ready.</strong> Social database or sign-in configuration is unavailable. No demo profiles or fake posts are shown.</div>}
@@ -567,7 +567,7 @@ export default function SocialPage(){
         </form>:<div className="social-empty">Sign in with your wallet to create a real creator profile.</div>)}
         {tab==="messages"&&<div className="social-card social-messages">
           <div className="social-message-icon">▤</div><h2>Private conversations are in development.</h2>
-          <p>The database foundation reserves encrypted envelopes and per-user public keys, but end-to-end encryption, key registration, device recovery, blocking checks, and security review are not complete.</p>
+          <p>Message request metadata, blocked/muted account checks, key-version safeguards, and nonce replay defenses are covered by disposable PostgreSQL tests. End-to-end encryption, live key registration, multi-device recovery, and independent security review are still pending.</p>
           <p><strong>Sending and receiving DMs are intentionally disabled.</strong> Looke will not store plaintext private messages or advertise unverified encryption.</p>
           <span>FOUNDATION ONLY · NO LIVE MESSAGES</span>
         </div>}

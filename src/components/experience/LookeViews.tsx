@@ -163,6 +163,22 @@ export function MessagesPanel(){
   const [requests,setRequests]=useState(false);
   const [recipient,setRecipient]=useState("");
   const [readyNote,setReadyNote]=useState("Messaging security review pending.");
+  const [requestRows,setRequestRows]=useState<Array<{
+    id:string;direction:"incoming"|"outgoing";peerHandle:string;
+    peerName:string;status:string;
+  }>>([]);
+  const [requestNote,setRequestNote]=useState("Message request data requires an approved database.");
+  useEffect(()=>{
+    if(!requests)return;
+    let active=true;
+    void fetch("/api/experience/messaging/requests",{cache:"no-store",credentials:"same-origin"})
+      .then(async r=>{if(!r.ok)throw new Error("Message request history is unavailable.");return await r.json() as {requests:typeof requestRows;transportEnabled:boolean};})
+      .then(data=>{if(active){setRequestRows(data.requests);
+        setRequestNote("Real request metadata only; no messages can be sent or received.");}})
+      .catch(()=>{if(active){setRequestRows([]);
+        setRequestNote("No verified request records available. Sign in and configure approved social data.");}});
+    return ()=>{active=false;};
+  },[requests]);
   useEffect(()=>{
     void fetch("/api/experience/messaging/readiness",{cache:"no-store"})
       .then(r=>r.json())
@@ -181,8 +197,16 @@ export function MessagesPanel(){
       </div>
       <div className="lk-messages-heading"><h1>Messages</h1>
         <button onClick={()=>setRequests(x=>!x)} type="button">{requests?"Back to messages":"Requests"}</button></div>
-      <div className="lk-messages-none"><span aria-hidden="true">💬</span><strong>{requests?"No message requests":"No messages yet"}</strong>
-        <p>{search?"There are no matching conversations.":"Your secure conversations will appear here after messaging has been independently reviewed."}</p></div>
+      {requests && requestRows.some(r=>(r.peerHandle+" "+r.peerName).toLowerCase().includes(search.toLowerCase()))?
+        requestRows.filter(r=>(r.peerHandle+" "+r.peerName).toLowerCase().includes(search.toLowerCase()))
+          .map(r=><div key={r.id} className="lk-messages-none">
+            <strong>@{r.peerHandle}</strong><p>{r.peerName} · {r.direction} request · {r.status}</p>
+            <small>No message content is stored. Acceptance does not enable delivery.</small>
+          </div>):
+        <div className="lk-messages-none"><span aria-hidden="true">💬</span>
+          <strong>{requests?"No verified message requests":"No messages yet"}</strong>
+          <p>{requests?requestNote:search?"There are no matching conversations.":"Your secure conversations will appear only after independent encryption and recovery review."}</p>
+        </div>}
     </div>
     <div className="lk-messages-stage">
       <span aria-hidden="true" className="lk-messages-plane">➤</span>
@@ -191,7 +215,7 @@ export function MessagesPanel(){
       {newMessage?<div className="lk-compose-message">
         <input type="text" placeholder="Search a creator by handle" value={recipient}
           onChange={e=>setRecipient(e.target.value)} aria-label="Recipient handle" maxLength={24}/>
-        <p>Private messaging is not live. No recipient data or plaintext message is stored.</p>
+        <p>Private messaging is not live. No recipient or plaintext message is stored by this composer.</p>
         <button type="button" onClick={()=>setNewMessage(false)}>Close composer</button>
       </div>:<button type="button" onClick={()=>setNewMessage(true)}>Send message</button>}
       <div className="lk-m15-security" role="status">{readyNote}

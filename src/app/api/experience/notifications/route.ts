@@ -4,6 +4,7 @@ import {query,rateLimit} from "../../../../lib/social/db";
 import {readJson} from "../../../../lib/social/http";
 import {failure} from "../../../../lib/social/http";
 import {m3SocialWritesEnabled} from "../../../../lib/social/m3-social-access";
+import {m5RequestsEnabled} from "../../../../lib/experience/m5-message-safety";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -94,9 +95,28 @@ export async function GET(request:NextRequest){
         WHERE owner=$1
       `,[current.address]),
     ]);
+    // M5 only shows genuine pending requests addressed to this signed-in wallet.
+    const messageRequests=m5RequestsEnabled()?await query<{
+      id:string;handle:string;display_name:string;created_at:Date;
+    }>(`
+      SELECT r.id,p.handle,p.display_name,r.created_at
+      FROM social_dm_requests r JOIN social_profiles p ON p.address=r.requester
+      WHERE r.recipient=$1 AND r.status='pending' AND p.suspended=false
+      AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE
+        (b.blocker=$1 AND b.blocked=r.requester) OR (b.blocker=r.requester AND b.blocked=$1))
+      AND NOT EXISTS(SELECT 1 FROM social_mutes m WHERE
+        (m.muter=$1 AND m.muted=r.requester) OR (m.muter=r.requester AND m.muted=$1))
+      ORDER BY r.created_at DESC LIMIT 20
+    `,[current.address]):{rows:[]};
     const lastSeen=seen.rows[0]?new Date(seen.rows[0].last_seen_at).getTime():0;
     const allowed=prefs.rows[0]??{follows:true,comments:true,likes:true,reposts:true};
     const events=[
+      ...messageRequests.rows.map(row=>({
+        id:"request:"+row.id,type:"Other" as const,
+        actorHandle:row.handle,actorName:row.display_name,
+        text:"sent you a message request (messaging disabled)",
+        timestamp:row.created_at,postId:null,
+      })),
       ...(allowed.follows?follows.rows:[]).map(row=>({
         id:"follow:"+row.follower,type:"Follows" as const,
         actorHandle:row.handle,actorName:row.display_name,
