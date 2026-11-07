@@ -245,6 +245,7 @@ export default function Home() {
                     {submitting ? "Checking wallet / transaction…" : transactionStatus === "confirmed" ? "Verified on Ultra Testnet ✓" : transactionStatus === "submitted" ? "Awaiting independent verification" : "Launch on Ultra Testnet ↗"}
                   </button>
                   <p className="disabled-reason">Pair creation requires independently reviewed ULTRA/LOOKE assets, liquidity and explicit wallet approval. Draft previews remain available.</p>
+                  <p className="disabled-reason">M6 factory candidate: zero platform creation fee (0 UOS). Additional network gas is unknown until wallet review. ULTRA/LOOKE is a pairing preference only; no liquidity or token issuance has been approved.</p>
                   {factoryStatus !== "verified" && <p className="disabled-reason" role="status">Factory: {factoryReason || (factoryStatus === "checking" ? "Checking deployment receipt…" : "Not configured.")}</p>}
                   {factoryStatus === "verified" && !address && <p className="disabled-reason">Connect your wallet to enable launching.</p>}
                   {address && !onUltra && <p className="disabled-reason">Switch your wallet to Ultra EVM Testnet.</p>}
