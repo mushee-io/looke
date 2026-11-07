@@ -56,7 +56,7 @@ test("M5 encrypted envelope offline validation rejects plaintext, noncanonical n
   {...envelope,ciphertext:Buffer.alloc(2).toString("base64")},
   {...envelope,senderKeyVersion:0},
   {...envelope,recipientKeyVersion:0},
-  {...envelope,nonce:nonce.slice(0,-1)+"A"},
+  {...envelope,nonce:nonce+"="},
   {...envelope,ciphertext:ciphertext.slice(0,-2)+"x="},
  ]){
   assert.throws(()=>inspectM5Envelope(bad,a,b));

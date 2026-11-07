@@ -205,7 +205,7 @@ export function MessagesPanel(){
           </div>):
         <div className="lk-messages-none"><span aria-hidden="true">💬</span>
           <strong>{requests?"No verified message requests":"No messages yet"}</strong>
-          <p>{requests?requestNote:search?"There are no matching conversations.":"Your secure conversations will appear only after independent encryption and recovery review."}</p>
+          <p>{requests?requestNote:search?"There are no matching conversations.":"Your secure conversations will appear after messaging has been independently reviewed."}</p>
         </div>}
     </div>
     <div className="lk-messages-stage">
@@ -215,7 +215,7 @@ export function MessagesPanel(){
       {newMessage?<div className="lk-compose-message">
         <input type="text" placeholder="Search a creator by handle" value={recipient}
           onChange={e=>setRecipient(e.target.value)} aria-label="Recipient handle" maxLength={24}/>
-        <p>Private messaging is not live. No recipient or plaintext message is stored by this composer.</p>
+        <p>Private messaging is not live. No recipient data or plaintext message is stored by this composer.</p>
         <button type="button" onClick={()=>setNewMessage(false)}>Close composer</button>
       </div>:<button type="button" onClick={()=>setNewMessage(true)}>Send message</button>}
       <div className="lk-m15-security" role="status">{readyNote}
