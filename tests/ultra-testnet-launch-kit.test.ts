@@ -39,3 +39,19 @@ test("Markets require actual positive reserves before a Vercel registry is propo
  assert.match(trading, /href="\/setup"/);
  assert.match(home,/verifyFactoryDeployment/);
 });
+
+const dex=readFileSync("src/app/setup/dex/page.tsx","utf8");
+test("V2 infrastructure is deployed only through a wallet on Ultra EVM 18881",()=>{
+ for(const marker of ["eth_requestAccounts","eth_sendTransaction","encodeDeployData","confirmations:2","UniswapV2Factory","UniswapV2Router02","WETH9","getBytecode","feeToSetter","getAddress(f)","getAddress(w)"])assert.ok(dex.includes(marker),marker);
+ assert.match(dex,/getChainId\(\)!==18881/);
+ assert.match(dex,/"0x49c1"/);
+ assert.doesNotMatch(dex,/privateKey|mnemonic|secretKey/);
+});
+test("Wrapped Testnet UOS uses wallet-approved payable deposit and checks actual balance delta",()=>{
+ for(const marker of ["functionName:\"deposit\"","parseEther","value:\"0x\"","functionName:\"balanceOf\"","after<before+value"])assert.ok(dex.includes(marker),marker);
+ assert.match(dex,/receipt\.status!==\"success\"/);
+});
+test("Launch setup links to actual DEX infrastructure deployment page",()=>{
+ const source=readFileSync("src/app/setup/page.tsx","utf8");
+ assert.match(source,/href=\"\/setup\/dex\"/);
+});
