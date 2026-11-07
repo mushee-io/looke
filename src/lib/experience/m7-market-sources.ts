@@ -1,11 +1,9 @@
-import "server-only";
 /** M7 only returns markets when original Ultra-18881 creator issuance AND
  * independent operator allowlisted V2 pool+quote token sources are checked.
  * Empty configuration means explicit NO-GO, never synthetic prices.
  */
 import {getAddress} from "viem";
-import {registeredMarkets,verifiedMarket,recentSwaps,quotedTrade} from "../trading-server";
-import {exactOnChainHolders} from "../ops/m13-metrics";
+import {parseMarketRegistry} from "../trading";
 import {query} from "../social/db";
 import {m6ReadOnlyClient,m6ConfiguredFactory,verifyM6Factory,verifyM6CoinReceipt} from "./m6-chain-proof";
 import {validateM6CreatorPreview} from "./m6-creator";
@@ -19,7 +17,7 @@ export function m7SourceConfig(){
   ultra:process.env.LOOKE_M7_ULTRA_QUOTE_TOKEN,looke:process.env.LOOKE_M7_LOOKE_QUOTE_TOKEN
  });
  const factory=m6ConfiguredFactory();
- const registered=registeredMarkets();
+ const registered=parseMarketRegistry(process.env.LOOKE_M4_MARKETS_JSON);
  if(!manifest.length||!quotes||!factory||!registered.length)return null;
  if(manifest.some(m=>!registered.some(x=>x.id===m.marketId)))
   throw Error("M7 manifests include unknown market identifiers.");
@@ -31,6 +29,7 @@ export async function m7VerifiedMarket(id:string){
  if(!config)throw Error("Original M6 factory/creator receipts, ULTRA/LOOKE quote token addresses and independently reviewed market provenance are not configured.");
  const entry=config.manifest.find(x=>x.marketId===id);
  if(!entry)throw Error("Market not included in independently reviewed M7 creator evidence.");
+ const {verifiedMarket}=await import("../trading-server");
  const [snapshot,previewRow]=await Promise.all([
   verifiedMarket(id),
   query<{name:string;symbol:string;metadata_uri:string;supply_tokens:string;
@@ -58,7 +57,7 @@ export async function m7VerifiedMarket(id:string){
  assertConfirmations(receipt.blockNumber,head,2);
  const finalized=head>2n?head-2n:0n;
  const holders=finalized>=receipt.blockNumber
-  ?await exactOnChainHolders(snapshot.baseToken,receipt.blockNumber,finalized):null;
+  ?await (await import("../ops/m13-metrics")).exactOnChainHolders(snapshot.baseToken,receipt.blockNumber,finalized):null;
  return {snapshot,marketIdentity,creation,holderCount:holders,
   source:"original-ultra-evm-testnet-contract-reads" as const,
   originBlock:receipt.blockNumber.toString(),originTime:new Date(Number(block.timestamp)*1000).toISOString(),
@@ -78,10 +77,12 @@ export async function m7VerifiedMarketFeed(){
 }
 export async function m7VerifiedMarketActivity(id:string,interval:300|900|3600){
  await m7VerifiedMarket(id);
+ const {recentSwaps}=await import("../trading-server");
  return recentSwaps(id,interval);
 }
 export async function m7VerifiedQuote(id:string,side:"buy"|"sell",amount:string,slippage:number){
  const source=await m7VerifiedMarket(id);
+ const {quotedTrade}=await import("../trading-server");
  const quote=await quotedTrade(id,side,amount,slippage);
  if(quote.market.id!==source.snapshot.id||
    quote.market.pair.toLowerCase()!==source.snapshot.pair.toLowerCase()||
