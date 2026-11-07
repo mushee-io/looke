@@ -1,0 +1,75 @@
+name: Final10 M8 genuine wallet portfolio and quarantined game-point proofs
+on:
+  pull_request:
+jobs:
+  owner-portfolio-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: M8 source-backed holdings, canonical transfers, separate signed attestations and NO-GO flags
+        run: npm run test:final-m8
+      - name: Strict TypeScript security and API validation
+        run: npm run typecheck
+      - name: Protected production-safe Next build (writes off)
+        run: npm run build
+        env:
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M2_IDENTITY_WRITES_ENABLED: 'false'
+          LOOKE_M3_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M7_OPERATOR_SOURCE_APPROVED: 'false'
+          LOOKE_M7_MARKET_REVIEW_WRITES_ENABLED: 'false'
+          LOOKE_M8_GAME_IMPORT_STAGE_ENABLED: 'false'
+          LOOKE_M8_SOURCE_AUDIT_APPROVED: 'false'
+          LOOKE_POINTS_ACCOUNTING_ENABLED: 'false'
+          LOOKE_M4_TRADING_ENABLED: 'false'
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: looke_m8_ci
+          POSTGRES_USER: looke_m8
+          POSTGRES_PASSWORD: ci_only_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U looke_m8 -d looke_m8_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://looke_m8:ci_only_password@localhost:5432/looke_m8_ci
+      LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+      LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+      LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
+      LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
+      LOOKE_M8_GAME_IMPORT_STAGE_ENABLED: 'false'
+      LOOKE_M8_SOURCE_AUDIT_APPROVED: 'false'
+      LOOKE_POINTS_ACCOUNTING_ENABLED: 'false'
+      LOOKE_M7_OPERATOR_SOURCE_APPROVED: 'false'
+      LOOKE_PUBLIC_BETA_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Apply disposable-only 001–015 source and quarantine schema
+        run: npm run db:migrate
+      - name: M8 two real CI wallet sessions, independently signed local attestations, replay and cross-wallet denials
+        run: npm run test:final-m8-db
+  solidity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Compile existing M6 and prior ERC-20 contracts; no deployment
+        run: forge build
+      - name: All existing deterministic factory and Solidity security tests
+        run: forge test -vv
