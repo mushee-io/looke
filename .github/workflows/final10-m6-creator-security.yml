@@ -1,0 +1,76 @@
+name: Final10 M6 Ultra creator token foundations
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  creator-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Offline unsigned creator transaction and testnet/metadata attack-path tests
+        run: npm run test:final-m6
+      - name: Strict TypeScript
+        run: npm run typecheck
+      - name: Production-safe app build, no live assets
+        run: npm run build
+        env:
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M2_IDENTITY_WRITES_ENABLED: 'false'
+          LOOKE_M3_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M4_CREATOR_MEDIA_WRITES_ENABLED: 'false'
+          LOOKE_M5_MESSAGE_REQUEST_WRITES_ENABLED: 'false'
+          LOOKE_M6_CREATOR_DRAFT_WRITES_ENABLED: 'false'
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Compile original and M6 Testnet-only factories
+        run: forge build
+      - name: Fixed supply, ULTRA/LOOKE references, zero fee, replay and Mainnet denial
+        run: forge test -vv
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: looke_m6_ci
+          POSTGRES_USER: looke_m6
+          POSTGRES_PASSWORD: ci_only_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U looke_m6 -d looke_m6_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://looke_m6:ci_only_password@localhost:5432/looke_m6_ci
+      LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+      LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
+      LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
+      LOOKE_M6_CREATOR_DRAFT_WRITES_ENABLED: 'true'
+      LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+      LOOKE_PUBLIC_BETA_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Migrate only disposable current social schema
+        run: npm run db:migrate
+      - name: M6 signed disposable owner-intents and no fabricated deployment proofs
+        run: npm run test:final-m6-db
