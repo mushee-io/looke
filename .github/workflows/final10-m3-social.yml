@@ -1,0 +1,63 @@
+name: Final10 M3 Ultra social feed acceptance
+
+on:
+  pull_request:
+
+jobs:
+  social:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: M3 testnet-only social allowlist and text-only action tests
+        run: npm run test:final-m3
+      - name: TypeScript strict build checks
+        run: npm run typecheck
+      - name: Production build - all external writes OFF
+        run: npm run build
+        env:
+          LOOKE_PUBLIC_BETA_ENABLED: 'false'
+          LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_M2_IDENTITY_WRITES_ENABLED: 'false'
+          LOOKE_M3_SOCIAL_WRITES_ENABLED: 'false'
+          LOOKE_MEDIA_UPLOADS_ENABLED: 'false'
+          LOOKE_POINTS_ACCOUNTING_ENABLED: 'false'
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: looke_m3_ci
+          POSTGRES_USER: looke_m3
+          POSTGRES_PASSWORD: ci_only_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U looke_m3 -d looke_m3_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://looke_m3:ci_only_password@localhost:5432/looke_m3_ci
+      LOOKE_SOCIAL_APP_ORIGIN: http://localhost:3000
+      LOOKE_M2_IDENTITY_WRITES_ENABLED: 'true'
+      LOOKE_M3_SOCIAL_WRITES_ENABLED: 'true'
+      LOOKE_SOCIAL_WRITES_ENABLED: 'false'
+      LOOKE_PUBLIC_BETA_ENABLED: 'false'
+      LOOKE_MEDIA_UPLOADS_ENABLED: 'false'
+      LOOKE_POINTS_ACCOUNTING_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Apply genuine disposable social schema, not legacy user data
+        run: npm run db:migrate
+      - name: M3 two-wallet owner-only posts, replies, feed, engagement and notifications
+        run: npm run test:final-m3-db

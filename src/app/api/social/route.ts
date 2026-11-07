@@ -5,6 +5,7 @@ import { failure, readJson } from "../../../lib/social/http";
 import { query, rateLimit, socialDb } from "../../../lib/social/db";
 import {uploadId,uploadEnabled} from "../../../lib/social/upload-provider";
 import {handlePolicy} from "../../../lib/social/m2-identity";
+import {canWriteSocialAction,requireM3TextOnlyPost,M3TextOnlyError} from "../../../lib/social/m3-social-access";
 import { z } from "zod";
 
 export const runtime="nodejs";
@@ -218,7 +219,7 @@ export async function POST(req:NextRequest){
     if(action==="message" || action==="conversation")throw new HttpError(501,"DM sending is disabled until independently reviewed end-to-end encryption and key recovery are available.");
     if(action==="profile"){
       if(!identityWritesEnabled())throw new HttpError(503,"Looke identity writes are disabled pending operator approval.");
-    }else if(!writesEnabled())throw new HttpError(503,"Social writes are disabled until database and moderation checks pass.");
+    }else if(!canWriteSocialAction(action))throw new HttpError(503,"Social writes are disabled until database and moderation checks pass.");
     const active=await requireViewer(req),actor=active.address;
     if(action==="profile"){
       await rateLimit(actor,"profile",10,3600);
@@ -234,6 +235,13 @@ export async function POST(req:NextRequest){
     if(action==="post"){
       await rateLimit(actor,"post",12,600);
       const v=post.parse({body:input.body,asset:input.asset??null,media:input.media??null});
+      // M3 enables only plain-text posts; publishing token references or media
+      // still needs separately reviewed M4/M6 permissions and a real provider.
+      try{requireM3TextOnlyPost({asset:v.asset,media:v.media,mediaUploadId:input.mediaUploadId});}
+      catch(error){
+        if(error instanceof M3TextOnlyError)throw new HttpError(403,error.message);
+        throw error;
+      }
       // M16: a hosted URL alone is not provenance or upload permission.
       // Only one-use, provider-confirmed and owner-bound upload intents can attach media.
       if(v.media!==null)throw new HttpError(400,"Raw media URLs cannot be posted. Authorize and verify a hosted upload first.");
@@ -282,7 +290,16 @@ export async function POST(req:NextRequest){
           AND (p.media_url IS NULL OR p.media_status='approved')`,[v.postId]);
       if(!target.rows.length)throw new HttpError(404,"Post not found.");
       await assertNotBlocked(actor,target.rows[0].author);
-      const r=await query(`INSERT INTO social_comments(post_id,author,body) VALUES($1,$2,$3) RETURNING id,created_at`,[v.postId,actor,v.body]);
+      const r=await query(`
+        INSERT INTO social_comments(post_id,author,body)
+        SELECT p.id,$2,$3 FROM social_posts p JOIN social_profiles pr ON pr.address=p.author
+        WHERE p.id=$1 AND p.hidden=false AND p.deleted_at IS NULL AND pr.suspended=false
+          AND (p.media_url IS NULL OR p.media_status='approved')
+          AND NOT EXISTS(SELECT 1 FROM social_blocks b
+            WHERE (b.blocker=$2 AND b.blocked=p.author) OR (b.blocked=$2 AND b.blocker=p.author))
+        RETURNING id,created_at
+      `,[v.postId,actor,v.body]);
+      if(r.rowCount!==1)throw new HttpError(404,"Post is no longer available for replies.");
       return cacheData({ok:true,comment:r.rows[0]});
     }
     if(action==="follow"||action==="unfollow"||action==="block"||action==="unblock"){

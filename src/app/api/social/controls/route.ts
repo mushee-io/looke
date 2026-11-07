@@ -3,6 +3,7 @@ import {HttpError,requireViewer,verifyRequestOrigin,writesEnabled} from "../../.
 import {query,rateLimit} from "../../../../lib/social/db";
 import {failure,readJson} from "../../../../lib/social/http";
 import {controlWrite} from "../../../../lib/social/m18";
+import {m3SocialWritesEnabled} from "../../../../lib/social/m3-social-access";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 const headers={"cache-control":"private, no-store"};
@@ -31,7 +32,7 @@ export async function GET(req:NextRequest){
 export async function POST(req:NextRequest){
  try{
   verifyRequestOrigin(req);
-  if(!writesEnabled())throw new HttpError(503,"Creator controls are disabled until review.");
+  if(!writesEnabled()&&!m3SocialWritesEnabled())throw new HttpError(503,"Creator controls are disabled until review.");
   const actor=(await requireViewer(req)).address;
   const input=controlWrite.parse(await readJson(req));
   await rateLimit(actor,"controls",45,600);
