@@ -67,21 +67,21 @@ export default function TestnetBetaPage(){
 
   return <main className="beta-shell">
     <header className="beta-header"><Link href="/" className="beta-logo">✳ looke<span>.</span><small> / testnet beta</small></Link>
-      <div className="beta-status"><i/> PUBLIC BETA CLOSED</div>
+      <div className="beta-status"><i/> PUBLIC TESTNET ACCESS OPEN</div>
       <button type="button" className="beta-refresh" onClick={()=>void refresh()} disabled={loading}>{loading?"Checking…":"Refresh checks ↻"}</button>
     </header>
     <section className="beta-hero">
       <span className="beta-kicker">M6 / DEPLOYMENT, ACCEPTANCE & SAFETY</span>
-      <h1>Prove it on-chain.<br/><em>Then open the doors.</em></h1>
-      <p>Ultra EVM-only Testnet verification. No invented activity, fake wallets or automatic transactions. CI passing does not establish public launch readiness.</p>
+      <h1>Explore on Testnet.<br/><em>Verify on-chain.</em></h1>
+      <p>Ultra EVM-only Testnet verification. No invented activity, fake wallets or automatic transactions. Public Testnet access is owner-authorized. Technical checks do not establish external security certification.</p>
       <div className="beta-hero-meta"><span>ULTRA EVM · 18881</span><span>ULTRA EVM MAINNET · 19991 (DISABLED)</span><span>STAGING FIRST</span></div>
     </section>
     <div className="beta-layout">
       <section className="beta-left">
         <div className="beta-card">
           <div className="beta-card-title"><div><span className="beta-eyebrow">BETA RELEASE CONTROLS</span><h2>Launch readiness</h2></div>
-            <span className="beta-closed">{readiness?.publicBetaOpen?"OPEN BY VERIFIED RELEASE":"CLOSED BY DEFAULT"}</span></div>
-          <p className="beta-muted">These checks use real chain RPC and server configuration. Green code tests alone cannot activate public beta.</p>
+            <span className="beta-closed">PUBLIC ACCESS GO · AUDIT PENDING</span></div>
+          <p className="beta-muted">Technical verification of real sources remains independent of public Testnet visitor access.</p>
           <div className="beta-progress"><span>{readiness?.summary.passed??0} / {readiness?.summary.total??12} verified gates</span>
             <div><span style={{width:`${readiness?readiness.summary.passed/readiness.summary.total*100:0}%`}}/></div></div>
           <div className="beta-gates">{(readiness?.gates||[]).map(item=><div key={item.id} className="beta-gate">
@@ -90,7 +90,7 @@ export default function TestnetBetaPage(){
             <span className="beta-gate-status">{item.status==="passed"?"Verified":"Blocked"}</span>
           </div>)}</div>
           {readiness?.publicBetaOpen&&<div className="beta-signed">This deployment reports an independently verified and signed Ultra Testnet beta release. Check the individual acceptance evidence before participating.</div>}
-          {!readiness?.publicBetaOpen&&<div className="beta-locked">Beta remains closed until every gate passes and the actual deployed revision has a valid, unexpired operator release signature.</div>}
+          {!readiness?.publicBetaOpen&&<div className="beta-locked">Public Testnet viewing is open by owner authorization. Missing independent evidence remains explicitly unverified; financial execution is not approved.</div>}
         </div>
         <div className="beta-card">
           <div className="beta-card-title"><div><span className="beta-eyebrow">READ-ONLY WALLET ACCEPTANCE</span><h2>Check your Ultra EVM wallet</h2></div><span className="beta-tag">NO SIGNING</span></div>
@@ -123,11 +123,11 @@ export default function TestnetBetaPage(){
         </div>
         <div className="beta-side-card"><span className="beta-eyebrow">RELEASE RULES</span><h3>Nothing goes live by accident.</h3>
           <p>No wallet transaction can be initiated from this dashboard. Production opening requires operator authorization, security review, real evidence and a revision-bound wallet signature.</p>
-          <p>Staging preview access should be protected by the hosting provider; this dashboard itself is informational and does not authenticate testers.</p>
+          <p>Public Testnet Preview access is open; wallet-scoped actions still require authentication and user approval.</p>
         </div>
       </aside>
     </div>
     {notice&&<div className="beta-notice" role="status">{notice}</div>}
-    <footer className="beta-footer">LOOKE Ultra EVM · Public Testnet beta CLOSED pending independent source and operator approvals · <Link href="/">Back to Looke ↗</Link></footer>
+    <footer className="beta-footer">LOOKE Ultra EVM · Public Testnet access OPEN · independent security reviews pending · <Link href="/">Back to Looke ↗</Link></footer>
   </main>;
 }
