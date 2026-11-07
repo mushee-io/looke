@@ -60,7 +60,7 @@ export function m9SafeRollbackPlan(input:{
 }){
  if(!/^dpl_[A-Za-z0-9]{8,64}$/.test(input.previewId)||
     !/^[0-9a-f]{40}$/.test(input.previewSha)||
-    !/^https:\\/\\/[a-z0-9-]+\\.vercel\\.app$/.test(input.protectedOrigin)||
+    !new RegExp("^https://looke-[a-z0-9-]+[.]vercel[.]app$").test(input.protectedOrigin)||
     input.originalProductionAlias!=="looke-alpha.vercel.app"||
     input.originalDeployment!=="dpl_29EdVrfrJNTC5Q7gkZMcpaxLhQiG"||
     input.candidateProductionChange===true)
