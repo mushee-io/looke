@@ -24,6 +24,10 @@ export function verifyRequestOrigin(req:NextRequest){
 }
 
 export function writesEnabled() {return process.env.LOOKE_SOCIAL_WRITES_ENABLED==="true";}
+export function identityWritesEnabled() {return process.env.LOOKE_M2_IDENTITY_WRITES_ENABLED==="true" || writesEnabled();}
+export function identityConfigured() {
+ return Boolean(process.env.DATABASE_URL && process.env.LOOKE_SOCIAL_APP_ORIGIN && identityWritesEnabled());
+}
 
 export class HttpError extends Error { constructor(public status:number,message:string){super(message);} }
 
@@ -44,7 +48,7 @@ export async function requireViewer(req:NextRequest):Promise<ViewerRow>{
   return v;
 }
 export async function createChallenge(wallet:string){
-  if(!writesEnabled())throw new HttpError(503,"Looke social writes are disabled pending database setup and review.");
+  if(!identityWritesEnabled())throw new HttpError(503,"Looke wallet identity is disabled pending approved database and origin setup.");
   const addr=address.parse(wallet);
   await rateLimit(addr,"challenge",5,300);
   const id=randomUUID();
@@ -58,7 +62,7 @@ export async function createChallenge(wallet:string){
   return {challengeId:id,message,expiresAt:expires.toISOString(),network:"Ultra EVM Testnet (18881)"};
 }
 export async function verifyChallenge(id:string,signature:string){
-  if(!writesEnabled())throw new HttpError(503,"Looke social writes are disabled.");
+  if(!identityWritesEnabled())throw new HttpError(503,"Looke wallet identity is disabled.");
   const result=await query<{address:string;message:string}>(`
     SELECT address,message FROM social_auth_challenges
     WHERE id=$1 AND used_at IS NULL AND expires_at>now() LIMIT 1`,[id]);
@@ -84,7 +88,7 @@ export async function verifyChallenge(id:string,signature:string){
   return {token,user};
 }
 export function sessionResponse(token:string,user:ViewerRow){
-  const res=NextResponse.json({authenticated:true,user});
+  const res=NextResponse.json({authenticated:true,user},{headers:{"cache-control":"no-store"}});
   res.cookies.set({
     name:COOKIE_NAME,value:token,httpOnly:true,secure:process.env.NODE_ENV==="production",
     sameSite:"strict",path:"/",maxAge:7*24*3600,

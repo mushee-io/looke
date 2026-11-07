@@ -71,7 +71,9 @@
     "test:m32-db": "node --import tsx --test tests/m32-source-db.integration.ts",
     "test:m33-db": "node --import tsx --test tests/m33-live-db.integration.ts",
     "test:m34-db": "node --import tsx --test tests/m34-final-db.integration.ts",
-    "test:final-m1": "node --import tsx --test tests/m1-ultra-evm-only.test.ts"
+    "test:final-m1": "node --import tsx --test tests/m1-ultra-evm-only.test.ts",
+    "test:final-m2": "node --import tsx --test tests/final10-m2.test.ts",
+    "test:final-m2-db": "node --import tsx --test tests/final10-m2-db.integration.ts"
   },
   "dependencies": {
     "next": "^15.5.0",

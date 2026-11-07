@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createChallenge, logout, sessionResponse, verifyChallenge, verifyRequestOrigin, viewer } from "../../../../lib/social/auth";
+import { createChallenge, identityConfigured, logout, sessionResponse, verifyChallenge, verifyRequestOrigin, viewer } from "../../../../lib/social/auth";
 import { failure, readJson } from "../../../../lib/social/http";
 import { challenge, signature } from "../../../../lib/social/validation";
 
@@ -11,7 +11,7 @@ export async function GET(req:NextRequest){
     const user=await viewer(req);
     // Suspended accounts must never be advertised as authenticated sessions.
     const active=Boolean(user&&!user.suspended);
-    return NextResponse.json({authenticated:active,user:active?user:null},
+    return NextResponse.json({authenticated:active,user:active?user:null,identityConfigured:identityConfigured()},
       {headers:{"cache-control":"private, no-store"}});
   }catch(error){return failure(error);}
 }

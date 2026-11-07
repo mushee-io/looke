@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { address, comment, follow, handle, post, profile, report, uuid } from "../../../lib/social/validation";
-import { HttpError, requireViewer, verifyRequestOrigin, viewer, writesEnabled } from "../../../lib/social/auth";
+import { HttpError, identityWritesEnabled, requireViewer, verifyRequestOrigin, viewer, writesEnabled } from "../../../lib/social/auth";
 import { failure, readJson } from "../../../lib/social/http";
 import { query, rateLimit, socialDb } from "../../../lib/social/db";
 import {uploadId,uploadEnabled} from "../../../lib/social/upload-provider";
+import {handlePolicy} from "../../../lib/social/m2-identity";
 import { z } from "zod";
 
 export const runtime="nodejs";
@@ -18,7 +19,7 @@ export async function GET(req:NextRequest){
     const p=req.nextUrl.searchParams;
     const action=p.get("action")||"feed";
     const current=await viewer(req);
-    const wallet=current?.address??null;
+    const wallet=current&&!current.suspended?current.address:null;
     const cursor=p.get("cursor")?uuid.parse(p.get("cursor")):null;
     if(action==="me"){
       if(!wallet)return cacheData({authenticated:false,profile:null});
@@ -82,6 +83,13 @@ export async function GET(req:NextRequest){
       return cacheData({posts:result.rows.slice(0,20),
         nextCursor:result.rows.length>20?result.rows[19]?.event_id:null,
         authenticated:Boolean(current&&!current.suspended)});
+    }
+    if(action==="handle-status"){
+      const id=handle.parse(p.get("handle")||"");
+      if(handlePolicy(id).reserved)return cacheData({handle:id,available:false,reason:"reserved"});
+      const found=await query<{address:string}>("SELECT address FROM social_profiles WHERE handle=$1 LIMIT 1",[id]);
+      const available=!found.rows.length || found.rows[0].address===wallet;
+      return cacheData({handle:id,available,reason:available?"available":"taken"});
     }
     if(action==="profile"){
       const id=handle.parse(p.get("handle")||"");
@@ -208,15 +216,19 @@ export async function POST(req:NextRequest){
     const input=await readJson(req);
     const action=input.action;
     if(action==="message" || action==="conversation")throw new HttpError(501,"DM sending is disabled until independently reviewed end-to-end encryption and key recovery are available.");
-    if(!writesEnabled())throw new HttpError(503,"Social writes are disabled until database and moderation checks pass.");
+    if(action==="profile"){
+      if(!identityWritesEnabled())throw new HttpError(503,"Looke identity writes are disabled pending operator approval.");
+    }else if(!writesEnabled())throw new HttpError(503,"Social writes are disabled until database and moderation checks pass.");
     const active=await requireViewer(req),actor=active.address;
     if(action==="profile"){
       await rateLimit(actor,"profile",10,3600);
       const v=profile.parse({handle:input.handle,displayName:input.displayName,bio:input.bio,avatarUrl:input.avatarUrl});
+      if(handlePolicy(v.handle).reserved)throw new HttpError(400,"This @handle is reserved for official accounts.");
       const result=await query(`
         UPDATE social_profiles SET handle=$1,display_name=$2,bio=$3,avatar_url=NULLIF($4,''),updated_at=now()
         WHERE address=$5 RETURNING address,handle,display_name,bio,avatar_url`,
         [v.handle,v.displayName,v.bio,v.avatarUrl,actor]);
+      if(!result.rows[0])throw new HttpError(401,"The authenticated profile no longer exists.");
       return cacheData({profile:result.rows[0]});
     }
     if(action==="post"){
