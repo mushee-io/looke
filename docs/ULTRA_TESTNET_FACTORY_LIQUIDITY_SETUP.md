@@ -9,11 +9,11 @@
 - `src/app/page.tsx`: wallet-approved `createCoin` call, requires an authentic Testnet factory contract-creation receipt, runtime code, coinCount, and verifies a real CoinCreated event plus token state.
 - `src/app/trade/page.tsx`: wallet approval, router swap, minOut, 2+ confirmations, verified Swap/Transfer logs. `LOOKE_M4_TRADING_ENABLED=true` is already set in Preview.
 
-## Deploy the factory through an injected wallet
+## Deploy the factory through Looke /setup or Remix with an injected wallet
 
-1. Open [Remix](https://remix.ethereum.org), load **the source from the reviewed Looke repository**, including `LookeCoin.sol` and `LookeCoinFactory.sol`, and compile with Solidity **0.8.24** (optimizer 200).
-2. Connect MetaMask on chain **18881**, fund only the Testnet gas needed, and select Remix **Injected Provider**. Confirm the deployed contract is `LookeCoinFactory`, not a proxy or ERC20.
-3. Explicitly approve the **contract deployment transaction** in your wallet. Record the genuine transaction hash and confirmed `contractAddress` from the explorer. Do not supply private keys to Looke, CI or a remote assistant.
+1. From the reviewed repository, run `forge build` (Solidity **0.8.24**, optimizer 200) and use the generated local `out/LookeCoinFactory.sol/LookeCoinFactory.json` artifact in Looke `/setup`. Alternatively load both original Solidity sources into [Remix](https://remix.ethereum.org) with equivalent compiler settings.
+2. Connect MetaMask on chain **18881**, with enough Testnet UOS to cover deployment gas. In `/setup`, select the compiled local artifact and click **Deploy factory using my own Testnet wallet**. If using Remix instead, select **Injected Provider**. Confirm the selected contract and deployment bytecode in the wallet; never sign unknown bytecode.
+3. Explicitly approve the **contract deployment transaction** in your wallet. The `/setup` page waits for two confirmations, checks the real `contractAddress` and deployment receipt, reads factory `coinCount()`, and displays the authentic address/hash for Vercel. No deployment can run in CI. Do not supply private keys to Looke, CI or a remote assistant.
 4. Independently verify the factory `coinCount()` and deployed bytecode. In Vercel Preview settings set `NEXT_PUBLIC_LOOKE_FACTORY_ADDRESS` and `NEXT_PUBLIC_LOOKE_FACTORY_DEPLOY_TX`, then redeploy the exact approved commit. These are public identifiers, not secrets. See [Ultra EVM Quick Start](https://developers.ultra.io/staging/tutorials/Ultra-EVM/Quick-start).
 5. The creator studio checks that the original factory deployment transaction has `to == null`, matches the factory's runtime address and is confirmed on Ultra Testnet; then each creator must approve their own `createCoin`.
 
