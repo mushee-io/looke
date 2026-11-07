@@ -277,6 +277,7 @@ export default function TradePage(){
         <div className="trade-nav-highlight">◈ &nbsp; Spot Terminal</div>
         <span className="trade-nav-link">▧ &nbsp; Uniq NFTs · M3 in review</span>
         <Link href="/" className="trade-nav-link">⌂ &nbsp; Looke Home ↗</Link>
+        <Link href="/setup" className="trade-nav-link">⚙ &nbsp; Create & fund Testnet pair ↗</Link>
         <div className="trade-sidebar-note">
           <strong>Trust, then trade.</strong>
           <p>All active pools must verify against the configured factory, router, token contracts and live liquidity. No external price feeds or simulated orders.</p>
