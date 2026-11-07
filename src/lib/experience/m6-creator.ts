@@ -6,7 +6,8 @@ import {encodeFunctionData,parseUnits,getAddress} from "viem";
 import {validateM4TokenDraft} from "./m4-metadata";
 import {identityWritesEnabled} from "../social/auth";
 import {m3SocialWritesEnabled} from "../social/m3-social-access";
-import {assertActiveUltraEvmAccount,type UltraEvmWalletProvider} from "../ultra-evm-wallet";
+import {type UltraEvmWalletProvider} from "../ultra-evm-wallet";
+import {assertActiveUltraEvmAccount} from "../social/m2-identity";
 import {lookeM6FactoryAbi} from "./m6-factory-abi";
 
 const preview=z.object({
@@ -67,5 +68,5 @@ export async function prepareM6WalletReview(
  const data=encodeFunctionData({abi:lookeM6FactoryAbi,functionName:"createCoin",
   args:[reviewed.name,reviewed.symbol,reviewed.metadataURI,
     BigInt(reviewed.initialSupply),reviewed.pair==="ULTRA"?0:1,onchainNonce]});
- return {to,from:account,data,value:"0x0",chainId:18881,broadcasted:false,feeWei:"0"};
+ return {to,from:getAddress(account),data,value:"0x0",chainId:18881,broadcasted:false,feeWei:"0"};
 }
