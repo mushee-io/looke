@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent, type ChangeEvent } from "react";
 import Link from "next/link";
 import { getAddress, isAddress } from "viem";
+import {connectUltraEvmWallet,requireUltraEvmTestnet} from "../../lib/ultra-evm-wallet";
 import "./social.css";
 import "../../components/experience/m15.css";
 import "../../components/experience/m16.css";
@@ -62,14 +63,14 @@ async function post<T>(endpoint:"social"|"auth",body:Record<string,unknown>){
 function dateLabel(raw:string){const d=new Date(raw);return Number.isNaN(d.getTime())?"Unknown date":d.toLocaleString();}
 function abbrev(wallet:string){return wallet.length>14?`${wallet.slice(0,7)}…${wallet.slice(-5)}`:wallet;}
 function AssetBadge({item}:{item:Post}){
-  if(!item.asset_type||!item.asset_id)return null;
-  const label=item.asset_type==="token"?"Ultra EVM · Creator token":"Ultra native · Uniq NFT";
-  const url=item.asset_type==="token"?`https://evmexplorer.testnet.ultra.io/address/${item.asset_id}`:null;
-  return <div className="social-asset"><span>◇ {label}</span><strong>{item.asset_type==="uniq"?`#${item.asset_id}`:abbrev(item.asset_id)}</strong>
-    {url&&<a href={url} rel="noopener noreferrer" target="_blank">View reference ↗</a>}
-    <small>Community reference only · Ownership and price not verified by this post</small></div>;
+  if(item.asset_type!=="token"||item.asset_chain!=="ultra-evm"||!item.asset_id)return null;
+  return <div className="social-asset"><span>◇ Ultra EVM · Creator token</span>
+    <strong>{abbrev(item.asset_id)}</strong>
+    <a href={`https://evmexplorer.testnet.ultra.io/address/${item.asset_id}`}
+       rel="noopener noreferrer" target="_blank">View reference ↗</a>
+    <small>Community reference only · Ownership and price not verified by this post</small>
+  </div>;
 }
-
 export default function SocialPage(){
   const [user,setUser]=useState<User|null>(null);
   const [tab,setTab]=useState<Tab>("feed");
@@ -175,7 +176,7 @@ export default function SocialPage(){
     }finally{setMediaBusy(false);}
   }
 
-  const [assetType,setAssetType]=useState<"none"|"token"|"uniq">("none");
+  const [assetType,setAssetType]=useState<"none"|"token">("none");
   const [assetId,setAssetId]=useState("");
   const [commentFor,setCommentFor]=useState("");
   const [comments,setComments]=useState<Comment[]>([]);
@@ -256,25 +257,12 @@ export default function SocialPage(){
     if(!wallet){setNotice("An injected EVM wallet is required for Looke social sign-in.");return;}
     setWorking(true);setNotice("");
     try{
-      const accounts=await wallet.request({method:"eth_requestAccounts"}) as string[];
-      if(!accounts?.[0]||!isAddress(accounts[0]))throw new Error("Wallet did not provide an EVM account.");
-      let chain=String(await wallet.request({method:"eth_chainId"})).toLowerCase();
-      if(chain!=="0x49c1"){
-        try{await wallet.request({method:"wallet_switchEthereumChain",params:[{chainId:"0x49c1"}]});}
-        catch(e){
-          if((e as {code?:number})?.code!==4902)throw e;
-          await wallet.request({method:"wallet_addEthereumChain",params:[{
-            chainId:"0x49c1",chainName:"Ultra EVM Testnet",rpcUrls:["https://evm.test.ultra.eosusa.io"],
-            nativeCurrency:{name:"Ultra",symbol:"UOS",decimals:18},
-          }]});
-        }
-        chain=String(await wallet.request({method:"eth_chainId"})).toLowerCase();
-      }
-      if(chain!=="0x49c1")throw new Error("Ultra EVM Testnet is required for this social sign-in.");
-      const walletAddress=getAddress(accounts[0]);
+      const walletAddress=await connectUltraEvmWallet(wallet);
+      await requireUltraEvmTestnet(wallet);
       const challenge=await post<{challengeId:string;message:string}>("auth",{action:"challenge",address:walletAddress});
       const signature=await wallet.request({method:"personal_sign",params:[challenge.message,walletAddress]});
       if(typeof signature!=="string")throw new Error("Wallet did not sign the challenge.");
+      await requireUltraEvmTestnet(wallet);
       await post("auth",{action:"verify",challengeId:challenge.challengeId,signature});
       await refreshMe();
       await loadFeed();
@@ -303,9 +291,7 @@ export default function SocialPage(){
     e.preventDefault();if(!user)return;
     setWorking(true);setNotice("");
     try{
-      const asset=assetType==="none"?null:assetType==="token"
-        ?{assetType:"token",assetChain:"ultra-evm",assetId}
-        :{assetType:"uniq",assetChain:"ultra-native",assetId};
+      const asset=assetType==="token"?{assetType:"token",assetChain:"ultra-evm",assetId}:null;
       if(selectedMedia&&!mediaUploadId)throw new Error("Upload and verify your selected file before publishing, or remove the file.");
       const result=await post<{note?:string}>("social",{
         action:"post",body:newPost,asset,mediaUploadId,
@@ -377,7 +363,7 @@ export default function SocialPage(){
           {([["feed","⌂ Feed"],["discover","◇ Discover"],["profile","◎ Profile"],["activity","♡ My Activity"],["analytics","▥ Analytics"],["points","◆ Looke Points"],["points-review","⊞ Points review"],["integrity","▤ Integrity"],["backend","◈ Backend checks"],["security","⛨ Security acceptance"],["beta","◈ Testnet beta prep"],["acceptance","⛨ Controlled acceptance"],["audit","⛨ Launch audit"],["operations","◈ Final acceptance"],["verification","⛨ External verification"],["rehearsal","◈ M27 release rehearsal"],["real-evidence","◈ M28 real evidence"],["operator-evidence","⛨ M29 evidence collection"],["operator-run","⛨ M30 live acceptance"],["source-gates","◈ M31 real source compatibility"],["source-reconcile","◈ M32 source reconciliation"],["live-integrations","◇ M33 live integrations"],["final-acceptance","◈ M34 final acceptance"],["controls","⚙ Account controls"],["moderation","⚑ Moderation"],["messages","▤ Messages"]] as const)
             .map(([key,label])=><button key={key} type="button" className={tab===key?"selected":""} onClick={()=>{setTab(key);setFocused(null);}}>{label}<span>↗</span></button>)}
         </nav>
-        <div className="social-sidefoot"><strong>For the creators.</strong><p>Follow projects, talk about tokens and Uniq NFTs, and build real communities.</p>
+        <div className="social-sidefoot"><strong>For the creators.</strong><p>Follow creators and discuss Ultra EVM tokens and communities.</p>
           <p>Posts reference assets; they do not verify holdings or represent investment advice.</p></div>
       </aside>
       <section className="social-main">
@@ -410,10 +396,10 @@ export default function SocialPage(){
               <p>Files are transferred only when you press Upload. An authorized hosting provider and operator moderation must be configured. Your file is not publicized on Looke before approval.</p>
             </div>
             <div className="social-compose-bottom">
-              <select aria-label="Reference an asset" value={assetType} onChange={e=>{setAssetType(e.target.value as "none"|"token"|"uniq");setAssetId("");}}>
-                <option value="none">No asset reference</option><option value="token">Share Ultra EVM token</option><option value="uniq">Share native Uniq NFT</option>
+              <select aria-label="Reference an asset" value={assetType} onChange={e=>{setAssetType(e.target.value as "none"|"token");setAssetId("");}}>
+                <option value="none">No asset reference</option><option value="token">Share Ultra EVM token</option>
               </select>
-              {assetType!=="none"&&<input aria-label="Asset identifier" required placeholder={assetType==="token"?"0x creator token address":"Native Uniq token ID"} value={assetId} onChange={e=>setAssetId(e.target.value)}/>}
+              {assetType!=="none"&&<input aria-label="Asset identifier" required placeholder="0x Ultra EVM creator token address" value={assetId} onChange={e=>setAssetId(e.target.value)}/>}
               <button type="submit" disabled={working||!newPost.trim()||mediaBusy||(!!selectedMedia&&!mediaUploadId)}>Publish →</button>
             </div>
             <small>Public, plain-text posts · No financial transaction or signature required after sign-in.</small>
@@ -436,8 +422,8 @@ export default function SocialPage(){
               <p className="social-post-body">{item.body}</p>
               <ApprovedPostMedia url={item.media_url??null} kind={item.media_kind??null}/>
               <AssetBadge item={item}/>
-              {item.asset_type&&item.asset_id&&
-                <AssetEvidence kind={item.asset_type==="token"?"token":"uniq"} id={item.asset_id}/>}
+              {item.asset_type==="token"&&item.asset_chain==="ultra-evm"&&item.asset_id&&
+                <AssetEvidence kind="token" id={item.asset_id}/>}
               <EngagementActions postId={item.id} initial={item}
                 authenticated={!!user} onChanged={()=>{void loadFeed();}}/>
               <div className="social-post-actions">
@@ -541,10 +527,10 @@ export default function SocialPage(){
           <p><strong>Sending and receiving DMs are intentionally disabled.</strong> Looke will not store plaintext private messages or advertise unverified encryption.</p>
           <span>FOUNDATION ONLY · NO LIVE MESSAGES</span>
         </div>}
-        <footer className="social-footer">Looke social · No fake followers, posts, rewards or messages · Ultra-first creator platform <Link href="/">Back to Looke ↗</Link></footer>
+        <footer className="social-footer">Looke social · No fake followers, posts, rewards or messages · Ultra EVM-only creator platform <Link href="/">Back to Looke ↗</Link></footer>
       </section>
       <aside className="social-right"><span className="social-eyebrow">BUILD WITH PURPOSE</span><h3>Ultra culture,<br/>together.</h3>
-        <p>Share a creator coin or a native Uniq reference in a public post. Verify token ownership and value independently before acting.</p>
+        <p>Share Ultra EVM creator coins in public posts. Independently verify token ownership and value before acting.</p>
         <div className="social-divider"/><strong>COMMUNITY SAFETY</strong>
         <p>Signed wallet identities, rate-limited posting, blocking, reporting, and audited moderator actions.</p>
         <div className="social-divider"/><Link href="/trade">Explore trading terminal ↗</Link>

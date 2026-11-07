@@ -136,15 +136,14 @@ export function TrendingFeed({search,onCreate}:{search:string;onCreate:()=>void}
       </div>
       <p className="lk-post-text">{post.body}</p>
       <ApprovedPostMedia url={post.media_url??null} kind={post.media_kind??null}/>
-      {post.asset_id&&post.asset_type&&<div className="lk-post-asset">
-        <span className="lk-post-asset-icon">◇</span><div><strong>{post.asset_type==="token"?"Creator token":"Native Uniq"}</strong>
-          <small>{post.asset_chain==="ultra-evm"?shortAddress(post.asset_id):"Uniq #"+post.asset_id}</small></div>
-        {post.asset_type==="token"&&post.asset_chain==="ultra-evm"?
-          <a href={testnetAddressUrl(post.asset_id)} target="_blank" rel="noopener noreferrer">Verify ↗</a>:
-          <Link href="/uniqs">Explore ↗</Link>}
-      </div>}
-      {post.asset_id&&post.asset_type&&
-        <AssetEvidence kind={post.asset_type==="token"?"token":"uniq"} id={post.asset_id}/>}
+      {post.asset_type==="token"&&post.asset_chain==="ultra-evm"&&post.asset_id&&
+        <div className="lk-post-asset">
+          <span className="lk-post-asset-icon">◇</span>
+          <div><strong>Ultra EVM creator token</strong><small>{shortAddress(post.asset_id)}</small></div>
+          <a href={testnetAddressUrl(post.asset_id)} target="_blank" rel="noopener noreferrer">Verify ↗</a>
+        </div>}
+      {post.asset_type==="token"&&post.asset_chain==="ultra-evm"&&post.asset_id&&
+        <AssetEvidence kind="token" id={post.asset_id}/>}
       <div className="lk-post-actions">
         <EngagementActions postId={post.id} initial={post} authenticated={socialSignedIn}
           onChanged={()=>{void load();}}/>
@@ -279,7 +278,7 @@ export function ProfilePanel({address,onCreate}:{address:string;onCreate:()=>voi
   const [nextProfileCursor,setNextProfileCursor]=useState<string|null>(null);
   const [moreBusy,setMoreBusy]=useState(false);
   const [status,setStatus]=useState("Checking your social profile…");
-  const [tab,setTab]=useState<"Posts"|"Collectibles"|"Tokens">("Posts");
+  const [tab,setTab]=useState<"Posts"|"Tokens">("Posts");
   useEffect(()=>{
     let alive=true;
     async function load(){
@@ -332,9 +331,9 @@ export function ProfilePanel({address,onCreate}:{address:string;onCreate:()=>voi
         window.location.origin+"/social?profile="+encodeURIComponent(profile.handle));}}>Share profile</button></>
     :<div className="lk-profile-status">{status}<Link href="/social">Open social sign-in ↗</Link></div>}
     <div className="lk-profile-tabs" role="tablist" aria-label="Profile activity">
-      {(["Posts","Collectibles","Tokens"] as const).map(t=><button type="button" key={t}
+      {(["Posts","Tokens"] as const).map(t=><button type="button" key={t}
         role="tab" aria-selected={tab===t} className={t===tab?"active":""} onClick={()=>setTab(t)}>
-        {t==="Posts"?"▦":t==="Collectibles"?"♧":"ϟ"}<span>{t}</span></button>)}
+        {t==="Posts"?"▦":"ϟ"}<span>{t}</span></button>)}
     </div>
     {tab==="Posts"?(posts.length?
       <><div className="lk-profile-posts">{posts.map(p=><article key={p.id}><p>{p.body}</p>
@@ -345,8 +344,8 @@ export function ProfilePanel({address,onCreate}:{address:string;onCreate:()=>voi
         {moreBusy?"Loading…":"Load older verified posts ↓"}</button>}</>:
       <div className="lk-profile-empty"><h2>Get started</h2><p>Share your first creator post on Looke.</p>
         <button onClick={onCreate} type="button">Make your first post</button></div>):
-      <div className="lk-profile-empty"><h2>{tab==="Tokens"?"Creator coins":"Uniq collectibles"}</h2>
-        <p>Holdings and creator ownership appear only when verified from Ultra's chains.</p>
-        <Link href={tab==="Tokens"?"/trade":"/uniqs"}>Open {tab==="Tokens"?"trading":"Uniq Studio"} ↗</Link></div>}
+      <div className="lk-profile-empty"><h2>Ultra EVM creator coins</h2>
+        <p>Holdings and ownership appear only with verified Ultra EVM Testnet evidence.</p>
+        <Link href="/trade">Open trading ↗</Link></div>}
   </div>;
 }

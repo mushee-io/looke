@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Looke | Create on Ultra",
-  description: "Looke is building an Ultra-native home for creator coins, Uniq NFTs and communities.",
+  description: "Looke Social is an Ultra EVM-only creator platform for coins, markets, profiles and communities. Testnet 18881; public beta closed.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -1,6 +1,8 @@
-# Looke — create on Ultra
+# Looke — create on Ultra EVM
 
-Looke is an **Ultra-first** creator platform for coins, native Uniq NFTs and communities. This is a fresh codebase in `mushee-io/looke`. It selectively reuses permitted open-source Zora SDK code; it is **not** a fork of Zora's commercial product, frontend or restricted coin contracts.
+> **Current product decision (5 November 2026): Looke Social launches on Ultra EVM only.** Ultra EVM Testnet (chain 18881) is active for protected development; Mainnet (19991) is documented but no mainnet signing, trading or token issuance is authorized. Base, BNB and native Ultra Uniq integrations are out of the active launch scope. Some older milestone entries below describe superseded historical implementations, not active product links. Public beta and all write flags remain closed.
+
+Looke is an **Ultra EVM-only** creator platform for coins, markets, posts and communities. This is a fresh codebase in `mushee-io/looke`. It selectively reuses permitted open-source Zora SDK code; it is **not** a fork of Zora's commercial product, frontend or restricted coin contracts.
 
 ## Current capabilities
 

@@ -13,7 +13,6 @@ import {safeAge} from "../../lib/ops/m13-discovery";
 import {testnetAddressUrl} from "../../lib/ultra";
 import type {CreatorLaunch,LaunchPage} from "../../lib/ops/m13-index";
 
-type NativeHead={chainId:string;headBlock:number;irreversibleBlock:number};
 const TABS:{key:DiscoverSort;label:string}[]=[
   {key:"trending",label:"Trending"},{key:"top",label:"Top"},
   {key:"new",label:"New"},{key:"watchlist",label:"Watchlist"},
@@ -21,7 +20,6 @@ const TABS:{key:DiscoverSort;label:string}[]=[
 function shortHash(value:string){return value.length>14?value.slice(0,7)+"…"+value.slice(-4):value;}
 function initials(value:string){return value.slice(0,2).toUpperCase();}
 const reference=[{label:"Creator coins",detail:"Launch your token",href:"/trade",icon:"✳",tone:"blue"},
- {label:"Uniq NFTs",detail:"Native Ultra collectibles",href:"/uniqs",icon:"◈",tone:"lilac"},
  {label:"Communities",detail:"Posts and creator profiles",href:"/social",icon:"↗",tone:"mint"}] as const;
 
 export default function DiscoverDashboard({onCreate,globalQuery=""}:{onCreate:()=>void;globalQuery?:string}){
@@ -40,7 +38,6 @@ export default function DiscoverDashboard({onCreate,globalQuery=""}:{onCreate:()
   const [loading,setLoading]=useState(true);
   const [error,setError]=useState("");
   const [saved,setSaved]=useState<string[]>([]);
-  const [native,setNative]=useState<NativeHead|null>(null);
   const [updated,setUpdated]=useState("");
   const searchRef=useRef<HTMLInputElement>(null);
 
@@ -97,21 +94,6 @@ export default function DiscoverDashboard({onCreate,globalQuery=""}:{onCreate:()
     if(tab==="new")void loadLaunches(null,true);
   },[tab,loadLaunches]);
   useEffect(()=>{
-    const update=async()=>{
-      try{
-        const r=await fetch("/api/uniqs?kind=status",{cache:"no-store"});
-        if(!r.ok)throw new Error("Native RPC unavailable.");
-        const next=await r.json() as NativeHead;
-        if(Number.isSafeInteger(next.irreversibleBlock)&&next.irreversibleBlock>0)
-          setNative(next);
-        else setNative(null);
-      }catch{setNative(null);}
-    };
-    void update();
-    const timer=window.setInterval(()=>{void update();},120_000);
-    return ()=>window.clearInterval(timer);
-  },[]);
-  useEffect(()=>{
     const onKey=(e:KeyboardEvent)=>{
       const target=e.target as HTMLElement|null;
       if(e.key==="/"&&!e.metaKey&&!e.ctrlKey&&target?.tagName!=="INPUT"&&target?.tagName!=="TEXTAREA"){
@@ -159,7 +141,6 @@ export default function DiscoverDashboard({onCreate,globalQuery=""}:{onCreate:()
           <button type="button" className="discover-category" onClick={onCreate}>
             <span className="discover-category-dot purple">✦</span> Creator studio
           </button>
-          <Link href="/uniqs" className="discover-category"><span className="discover-category-dot violet">◇</span> Uniq NFTs</Link>
           <Link href="/trade" className="discover-category"><span className="discover-category-dot mint">↗</span> Trading</Link>
           <Link href="/social" className="discover-category"><span className="discover-category-dot peach">◎</span> Communities</Link>
           <Link href="/beta" className="discover-category"><span className="discover-category-dot grey">✓</span> Beta status</Link>
@@ -306,13 +287,13 @@ export default function DiscoverDashboard({onCreate,globalQuery=""}:{onCreate:()
           <div className="discover-bottom-card discover-bottom-chain">
             <div className="discover-bottom-badge">NETWORK PULSE</div>
             <div className="discover-chain-row"><span className="discover-chain-glyph">◉</span><div><strong>Ultra EVM Testnet</strong><small>Chain ID 18881</small></div><span className="discover-chain-ok">Configured</span></div>
-            <div className="discover-chain-row"><span className="discover-chain-glyph">◆</span><div><strong>Ultra Native Testnet</strong><small>{native?"Irreversible block "+native.irreversibleBlock.toLocaleString("en-US"):"RPC check unavailable"}</small></div><span className={native?"discover-chain-ok":"discover-chain-pending"}>{native?"Verified":"Pending"}</span></div>
+            <div className="discover-chain-row"><span className="discover-chain-glyph">◆</span><div><strong>Ultra EVM Mainnet</strong><small>Chain ID 19991 · launch not enabled</small></div><span className="discover-chain-pending">Read-only</span></div>
             <Link href="/beta" className="discover-beta-link">View beta readiness <span>↗</span></Link>
           </div>
         </div>
       </div>
 
-      <div className="discover-endnote"><span>looke<span className="branddot">.</span></span><p>Creator coins, Uniqs and communities on Ultra.</p><span>EARLY ACCESS · TESTNET</span></div>
+      <div className="discover-endnote"><span>looke<span className="branddot">.</span></span><p>Creator coins, markets and communities, strictly on Ultra EVM.</p><span>EARLY ACCESS · TESTNET</span></div>
     </div>
   );
 }

@@ -17,10 +17,11 @@ contracts, not modified versions of those restricted implementations.
 Upstream: https://github.com/ourzora/zora-protocol
 License details: https://github.com/ourzora/zora-protocol/blob/main/packages/coins/LICENSE
 
-## Separate chain integrations
+## Final Ultra EVM-only network decision (5 November 2026)
 
-- **Ultra EVM testnet (chain 18881):** injected EVM wallets, creator coins, eventual EVM token liquidity.
-- **Ultra native:** native Uniq NFT mint, ownership, listings and messaging require native Ultra tooling. Uniqs are NOT ERC-721s on Ultra EVM.
+- **ACTIVE Ultra EVM Testnet (18881):** EVM wallets, creator coins, social, and future liquidity.
+- **Ultra EVM Mainnet (19991):** configuration and read-only checks only; no mainnet signing, deployments or transactions authorized.
+- Base, BNB and Ultra Native are excluded from the initial Looke Social product. Legacy source files and old audit reports remain for historical reproducibility, not as active wallet options. Future EVM NFTs require new audited ERC-721 contracts.
 - Social profiles, moderation, messaging and discovery need their own backend/indexer.
 - Zora SDK endpoints and Zora's deployed contract addresses MUST NOT be treated as Ultra deployments.
 
@@ -38,6 +39,6 @@ License details: https://github.com/ourzora/zora-protocol/blob/main/packages/coi
 1. Run npm tests, frontend build and `forge test` in CI.
 2. Deploy and verify the factory on **Ultra EVM Testnet**; record the network, deployer, contract address and transaction hash.
 3. Set `NEXT_PUBLIC_LOOKE_FACTORY_ADDRESS` to the verified Ultra EVM Testnet factory. Test coin creation with two wallets and independently verify the receipt.
-4. Integrate native Uniq NFT reads and minting through the Ultra native API/wallet, with independent transaction evidence.
+4. If NFTs are added later, implement a reviewed Ultra EVM ERC-721 path, with chain-specific wallet approval and independent deployment evidence.
 5. Add event-indexed creator coin discovery and security review before any trade/liquidity release.
 6. Build original social feed and messaging backend; do not fabricate activity.

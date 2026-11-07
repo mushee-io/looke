@@ -146,10 +146,10 @@ export function WalletModal({address,onClose,onConnect,onTrade,correctNetwork}:{
       </div>
       <div className="lk-wallet-tab-body">
         {tab==="Holdings"&&<><div className="lk-wallet-balances-heading"><strong>Balances</strong><span>Ultra EVM Testnet</span></div>
-          <div className="lk-wallet-asset"><span className="lk-pair-icon ultra">◆</span><div><strong>ULTRA (UOS)</strong><small>Native Testnet asset</small></div>
+          <div className="lk-wallet-asset"><span className="lk-pair-icon ultra">◆</span><div><strong>ULTRA (UOS)</strong><small>Ultra EVM gas asset</small></div>
             <strong>{balance===null?"—":Number(balance).toLocaleString("en-US",{maximumFractionDigits:6})}</strong></div>
           {balanceStatus&&<p className="lk-wallet-fiat-note">{balanceStatus}</p>}</>}
-        {tab==="Tokens"&&<div className="lk-wallet-blank"><strong>Verified token holdings</strong><p>No independently indexed ERC-20 token balances yet. Native UOS is visible in Holdings.</p></div>}
+        {tab==="Tokens"&&<div className="lk-wallet-blank"><strong>Verified token holdings</strong><p>No independently indexed ERC-20 token balances yet. Ultra EVM UOS is visible in Holdings.</p></div>}
         {tab==="Activity"&&<div className="lk-wallet-blank"><strong>Verified wallet activity</strong><p>Transaction history indexing has not been activated. No example trades or transfers are displayed.</p></div>}
       </div>
     </section>

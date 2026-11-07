@@ -8,13 +8,14 @@ import {CreateCoinModal,WalletModal,type CoinQuickDraft} from "../components/exp
 import "../components/experience/experience.css";
 import { isAddress } from "viem";
 import { type CoinDraft, validateCoinDraft } from "../lib/metadata";
+import {connectUltraEvmWallet} from "../lib/ultra-evm-wallet";
 import {createUltraPublicClient,verifyFactoryDeployment} from "../lib/verification";
 import {
   LOOKE_FACTORY_ADDRESS, LOOKE_FACTORY_DEPLOY_TX, ULTRA_EVM_TESTNET,
-  shortAddress, testnetAddressUrl, testnetTxUrl,
+  shortAddress, testnetAddressUrl, testnetTxUrl, isLookeTestnetChain,
 } from "../lib/ultra";
 
-type Screen = "Discover" | "Trending" | "Create" | "Uniq NFTs" | "Messages" | "Notifications" | "Wallet" | "Profile" | "Points";
+type Screen = "Discover" | "Trending" | "Create" | "Messages" | "Notifications" | "Wallet" | "Profile" | "Points";
 
 type EthereumProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -33,28 +34,6 @@ function injectedWallet(): EthereumProvider | null {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Wallet request failed. Check your extension.";
-}
-
-async function ensureUltraNetwork(provider: EthereumProvider): Promise<void> {
-  const actual = await provider.request({ method: "eth_chainId" });
-  if (actual === ULTRA_EVM_TESTNET.chainIdHex) return;
-  try {
-    await provider.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: ULTRA_EVM_TESTNET.chainIdHex }],
-    });
-  } catch (error) {
-    if ((error as { code?: number })?.code !== 4902) throw error;
-    await provider.request({
-      method: "wallet_addEthereumChain",
-      params: [{
-        chainId: ULTRA_EVM_TESTNET.chainIdHex,
-        chainName: ULTRA_EVM_TESTNET.chainName,
-        rpcUrls: [...ULTRA_EVM_TESTNET.rpcUrls],
-        nativeCurrency: ULTRA_EVM_TESTNET.nativeCurrency,
-      }],
-    });
-  }
 }
 
 export default function Home() {
@@ -76,11 +55,11 @@ export default function Home() {
   const [transactionStatus, setTransactionStatus] = useState<"idle" | "submitted" | "confirmed" | "failed">("idle");
   const [confirmedCoin, setConfirmedCoin] = useState("");
   const factoryConfigured = isAddress(LOOKE_FACTORY_ADDRESS) && /^0x[\da-fA-F]{64}$/.test(LOOKE_FACTORY_DEPLOY_TX);
-  const onUltra = chain.toLowerCase() === ULTRA_EVM_TESTNET.chainIdHex;
-  const screens: Screen[] = ["Discover","Trending","Messages","Create","Notifications","Points","Wallet","Profile","Uniq NFTs"];
+  const onUltra = isLookeTestnetChain(chain);
+  const screens: Screen[] = ["Discover","Trending","Messages","Create","Notifications","Points","Wallet","Profile"];
   const icons: Record<Screen,string> = {
     Discover:"⌂",Trending:"ϟ",Messages:"➤",Create:"＋",
-    Notifications:"♧",Points:"✧",Wallet:"▣",Profile:"◉","Uniq NFTs":"◇",
+    Notifications:"♧",Points:"✧",Wallet:"▣",Profile:"◉",
   };
   function chooseNavigation(item:Screen){
     setNotice("");
@@ -146,11 +125,12 @@ export default function Home() {
     setNotice("");
     setWalletBusy(true);
     try {
-      const accounts = await provider.request({ method: "eth_requestAccounts" }) as string[];
-      setAddress(accounts[0] ?? "");
-      await ensureUltraNetwork(provider);
+      const account = await connectUltraEvmWallet(provider);
+      setAddress(account);
       setChain(String(await provider.request({ method: "eth_chainId" })));
     } catch (error) {
+      setAddress("");
+      setChain("");
       setNotice(errorMessage(error));
     } finally {
       setWalletBusy(false);
@@ -220,7 +200,7 @@ export default function Home() {
           <div className="sidebar-bottom">
             <span className="sidebar-label">NETWORK</span>
             <div className="network-detail"><span className="statusdot" /> Ultra EVM Testnet <span>18881</span></div>
-            <p>Built for Ultra. Native Uniq support is a separate integration.</p>
+            <p>Exclusively Ultra EVM · Testnet 18881. Mainnet 19991 is not enabled for transactions.</p>
             <div className="sidefoot">Looke / Early access build · 01</div>
           </div>
         </aside>
@@ -233,7 +213,7 @@ export default function Home() {
           {screen === "Profile" && <ProfilePanel address={address} onCreate={()=>setShowCreate(true)}/>}
            {screen === "Points" && <PointsDashboard/>}
           {screen === "Wallet" && <div className="lk-wallet-route">
-            <h1>Wallet</h1><p>Inspect your real Ultra Testnet account in the wallet popup.</p>
+            <h1>Wallet</h1><p>Inspect your real Ultra EVM Testnet account in the wallet popup.</p>
             <button type="button" onClick={()=>address?setShowWallet(true):void connectWallet()}>
               {address?"Open wallet":"Connect wallet"}</button></div>}
 
@@ -273,10 +253,6 @@ export default function Home() {
             </section>
           )}
 
-          {screen === "Uniq NFTs" && <section className="info-screen"><span className="overline">02 / COLLECT</span><div className="info-icon">▧</div><h1 className="page-title">Made to be <em>collected.</em></h1><p>Looke will support Ultra's native Uniq NFTs: collections, ownership, minting and marketplace listings. These are native Ultra assets, not ordinary EVM ERC-721 tokens.</p><a href="/uniqs" className="primary" style={{ display: "inline-flex", textDecoration: "none", margin: "12px 0 30px" }}>Open Uniq Studio on Ultra Testnet ↗</a><div className="roadmap-line"><span>01</span><strong>Native Uniq Testnet studio and ownership reads</strong><span className="pill">TESTNET BUILD · M3</span></div><div className="roadmap-line"><span>02</span><strong>Creator minting and collection tools</strong><span className="pill">PLANNED</span></div><div className="roadmap-line"><span>03</span><strong>Verified marketplace execution</strong><span className="pill">PLANNED</span></div><a className="text-link" href="https://developers.ultra.io/" target="_blank" rel="noreferrer">Ultra developer resources ↗</a></section>}
-
-
-
           {notice && <div className="notice" role="status">{notice}</div>}
           {txHash && <div className="tx-result">
             <strong>{transactionStatus === "confirmed" ? "Verified coin creation" : "Submitted — not yet verified"}</strong>
@@ -285,7 +261,7 @@ export default function Home() {
             {confirmedCoin && <p>Created token: <a href={testnetAddressUrl(confirmedCoin)} target="_blank" rel="noopener noreferrer">{confirmedCoin}</a></p>}
             {transactionStatus !== "confirmed" && <p>A submitted hash alone is not proof of token creation.</p>}
           </div>}
-          <footer className="footer"><span>© 2026 Looke · An original Ultra-first creator platform</span><span>{address ? `Wallet ${shortAddress(address)}` : "Wallet disconnected"} · {onUltra ? "Ultra Testnet" : "Network not connected"}</span></footer>
+          <footer className="footer"><span>© 2026 Looke · Ultra EVM-only creator platform</span><span>{address ? `Wallet ${shortAddress(address)}` : "Wallet disconnected"} · {onUltra ? "Ultra Testnet" : "Network not connected"}</span></footer>
         </section>
       </div>
       {showCreate&&<CreateCoinModal onClose={()=>setShowCreate(false)} onReview={reviewQuickDraft}/>}

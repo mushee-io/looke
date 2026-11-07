@@ -9,16 +9,13 @@ type M33Info={milestone:"M33";mode:"config"|"live"|"proof";flagsClosed:boolean;
  evm?:Source;native?:Source;postgres?:Source;hostedMedia?:{status:string;assetVerified:false};
  error?:string;proof?:{kind:string;verified:boolean;network?:string;reference?:string;
  blockOrConfirmations?:number;details?:Record<string,string|number>};};
-type Kind="factory"|"coin"|"uniq";
+type Kind="factory"|"coin";
 export function M33LiveIntegrationLab(){
  const [result,setResult]=useState<M33Info|null>(null);
  const [proof,setProof]=useState<M33Info|null>(null);
  const [kind,setKind]=useState<Kind>("factory");
  const [address,setAddress]=useState("");
  const [tx,setTx]=useState("");
- const [factoryId,setFactoryId]=useState("");
- const [tokenId,setTokenId]=useState("");
- const [owner,setOwner]=useState("");
  const [working,setWorking]=useState<"live"|"proof"|null>(null);
  const [message,setMessage]=useState("Checking protected Preview configuration…");
  const config=useCallback(async()=>{
@@ -44,8 +41,7 @@ export function M33LiveIntegrationLab(){
   setWorking("proof");setProof(null);setMessage("");
   try{
    const p=new URLSearchParams({mode:"proof",kind});
-   if(kind==="uniq"){p.set("factoryId",factoryId.trim());p.set("tokenId",tokenId.trim());p.set("owner",owner.trim());}
-   else{p.set("address",address.trim());p.set("tx",tx.trim());}
+   p.set("address",address.trim());p.set("tx",tx.trim());
    const r=await fetch("/api/experience/m33-live?"+p.toString(),
     {cache:"no-store",credentials:"same-origin"});
    const x=await r.json() as M33Info;
@@ -57,7 +53,7 @@ export function M33LiveIntegrationLab(){
  return <section className="social-card lk-m31">
   <header><small>M33 / REAL INTEGRATIONS · PROTECTED TESTNET</small>
    <h2>Live Ultra proof and integration console</h2>
-   <p>Run actual chain-head reads, check current PostgreSQL source compatibility or independently verify exact factory, creator coin and native Uniq proofs. No wallet signing, generated trades, migration or public beta.</p>
+   <p>Run actual chain-head reads, check current PostgreSQL source compatibility or independently verify exact Ultra EVM factory and creator-coin proofs. No wallet signing, generated trades, migration or public beta.</p>
   </header>
   <div className="lk-m31-metrics">
    <div><small>Launch decision</small><strong>NO-GO</strong></div>
@@ -66,15 +62,12 @@ export function M33LiveIntegrationLab(){
    <div><small>Cloudinary</small><strong>{result?.hostedMedia?.status||"Not verified"}</strong></div>
   </div>
   <button type="button" disabled={working!==null||!result?.flagsClosed} onClick={()=>void runLive()}>
-   {working==="live"?"Contacting both Ultra Testnets…":"Run live RPC + PostgreSQL checks"}
+   {working==="live"?"Contacting Ultra EVM Testnet…":"Run live RPC + PostgreSQL checks"}
   </button>
   {result?.mode==="live"&&<div className="lk-m31-grid">
    <article><strong>Ultra EVM Testnet · chain 18881</strong>
     <p>{result.evm?.verified?"Live independently confirmed":"No valid current RPC evidence"}.
      {result.evm?.latestBlock?" Observed block: "+result.evm.latestBlock:""}</p></article>
-   <article><strong>Ultra native Testnet</strong>
-    <p>{result.native?.verified?"Live native chain verified":"Native network unavailable"}.
-     {result.native?.irreversibleBlock?" Last irreversible block: "+result.native.irreversibleBlock:""}</p></article>
    <article><strong>Actual current social database</strong>
     <p>{result.postgres?.status||"Not checked"}. {result.postgres?.currentTables??0}/19 required tables observed.
     A schema is not an actual creator profile or approved write.</p></article>
@@ -82,27 +75,17 @@ export function M33LiveIntegrationLab(){
     An authenticated asset, owner and moderation decision have not been verified by this check.</p></article>
   </div>}
   <h3>Independently verify a real on-chain asset</h3>
-  <p>Use real published addresses and transaction hashes, or an Ultra native owner and Uniq identifiers. The server checks the canonical Testnet sources rather than accepting a pasted claim.</p>
+  <p>Use actual Ultra EVM factory addresses and transaction hashes. The server checks canonical Testnet receipts instead of accepting a pasted claim.</p>
   <div className="lk-m31-grid">
    <article><strong>Verification type</strong>
     <select aria-label="Asset proof type" value={kind} onChange={e=>{setKind(e.target.value as Kind);setProof(null);}}>
      <option value="factory">EVM factory deployment</option><option value="coin">EVM creator coin creation</option>
-     <option value="uniq">Ultra native Uniq ownership</option>
     </select></article>
-   {kind==="uniq"?<>
-    <article><label>Native account<input aria-label="Ultra native account" value={owner}
-     onChange={e=>setOwner(e.target.value)} placeholder="native-account" maxLength={12}/></label></article>
-    <article><label>Factory ID<input aria-label="Uniq factory ID" value={factoryId}
-     onChange={e=>setFactoryId(e.target.value)} placeholder="123" maxLength={20}/></label></article>
-    <article><label>Token ID<input aria-label="Uniq token ID" value={tokenId}
-     onChange={e=>setTokenId(e.target.value)} placeholder="456" maxLength={20}/></label></article>
-   </>:<>
-    <article><label>Looke factory address<input aria-label="Looke factory address" value={address}
+   <article><label>Looke factory address<input aria-label="Looke factory address" value={address}
      onChange={e=>setAddress(e.target.value)} placeholder="0x…" maxLength={42}/></label></article>
-    <article><label>{kind==="factory"?"Factory deployment transaction":"Coin creation transaction"}<input
+   <article><label>{kind==="factory"?"Factory deployment transaction":"Coin creation transaction"}<input
      aria-label="Ultra EVM transaction hash" value={tx} onChange={e=>setTx(e.target.value)}
      placeholder="0x…" maxLength={66}/></label></article>
-   </>}
   </div>
   <button type="button" disabled={working!==null||!result?.flagsClosed} onClick={()=>void verify()}>
    {working==="proof"?"Checking actual on-chain receipt…":"Verify exact Testnet evidence"}
@@ -113,7 +96,7 @@ export function M33LiveIntegrationLab(){
     <p>{proof.proof.verified?proof.proof.network+" · "+proof.proof.reference:
      "No proof accepted. No wallet ownership or asset creation claimed."}</p>
     {proof.proof.blockOrConfirmations!==undefined&&
-     <p>Confirmations / irreversible block: {proof.proof.blockOrConfirmations}</p>}
+     <p>Confirmations: {proof.proof.blockOrConfirmations}</p>}
     {proof.proof.details&&Object.entries(proof.proof.details).map(([label,value])=>
      <p key={label}>{label}: {String(value)}</p>)}
    </article>

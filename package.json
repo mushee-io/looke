@@ -70,7 +70,8 @@
     "m32:reconcile": "tsx scripts/m32-reconcile.ts",
     "test:m32-db": "node --import tsx --test tests/m32-source-db.integration.ts",
     "test:m33-db": "node --import tsx --test tests/m33-live-db.integration.ts",
-    "test:m34-db": "node --import tsx --test tests/m34-final-db.integration.ts"
+    "test:m34-db": "node --import tsx --test tests/m34-final-db.integration.ts",
+    "test:final-m1": "node --import tsx --test tests/m1-ultra-evm-only.test.ts"
   },
   "dependencies": {
     "next": "^15.5.0",

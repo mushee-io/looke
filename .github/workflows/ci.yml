@@ -15,6 +15,8 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npm test
+      - name: M1 Ultra EVM-only wallet, network and retired-native acceptance
+        run: npm run test:final-m1
       - run: npm run typecheck
       - run: npm run build
       - name: M34 protected end-to-end acceptance smoke and POST denial
@@ -47,6 +49,24 @@ jobs:
           code=$(curl -s -o /tmp/m34-post.json -w "%{http_code}" -X POST \
             http://127.0.0.1:3100/api/experience/m34-final \
             -H 'Content-Type: application/json' -d '{"approve":true}')
+          test "$code" = "405"
+          curl -fsS --max-time 30 'http://127.0.0.1:3100/api/ultra-evm/health' | node -e '
+            let s="";process.stdin.on("data",x=>s+=x).on("end",()=>{
+              const a=JSON.parse(s);
+              if(a.milestone!=="M1"||a.networkPolicy!=="ultra-evm-only"||
+                 a.testnet.chainId!==18881||a.mainnet.chainId!==19991||
+                 a.activeChainId!==18881||a.mainnetTransactionsEnabled!==false||
+                 a.publicBetaOpen!==false||a.transactionsSent!==0||a.releaseDecision!=="NO_GO"||
+                 !["verified","unavailable"].includes(a.testnet.status)||
+                 !["verified","unavailable"].includes(a.mainnet.status))process.exit(2);
+            });
+          '
+          code=$(curl -s -o /tmp/m1-retired.json -w "%{http_code}" \
+            'http://127.0.0.1:3100/api/uniqs?kind=status')
+          test "$code" = "410"
+          curl -fsS http://127.0.0.1:3100/uniqs | grep -q 'Ultra EVM'
+          code=$(curl -s -o /tmp/m1-method.json -w "%{http_code}" -X POST \
+            http://127.0.0.1:3100/api/ultra-evm/health)
           test "$code" = "405"
 
   contracts:

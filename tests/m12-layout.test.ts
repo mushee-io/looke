@@ -22,9 +22,11 @@ test("M12 homepage is market-first rather than another huge landing hero",()=>{
   assert.match(style,/discover-markets\{[^}]*margin-top:17px/);
 });
 test("Market-first reference has functioning real route links and complete ranking tabs",()=>{
-  for(const route of ["/trade","/uniqs","/social","/beta"]){
+  for(const route of ["/trade","/social","/beta"]){
     assert.ok(jsx.includes('href="'+route+'"'),route+" must link to an actual page.");
   }
+  assert.equal(jsx.includes('href="/uniqs"'),false,
+    "Ultra EVM-only Looke must not expose native Uniq navigation.");
   for(const tab of ["Trending","Top","New","Watchlist"]){
     assert.ok(jsx.includes('label:"'+tab+'"'),tab+" tab must exist.");
   }
