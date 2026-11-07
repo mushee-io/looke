@@ -3,9 +3,10 @@ import {test} from "node:test";
 import {decodeFunctionData} from "viem";
 import {m6CreatorFactoryAbi} from "../src/lib/experience/m6-factory-abi";
 import {
- reviewUnsignedM6Creator,reviewM6WalletAuthorization,m6DraftWritesEnabled,
+ reviewUnsignedM6Creator,reviewM6WalletAuthorization,
  M6_WALLET_EXECUTION_ENABLED,M6_OPERATOR_FACTORY_APPROVED
 } from "../src/lib/experience/m6-creator";
+import {m6DraftWritesEnabled} from "../src/lib/experience/m6-creator-gates";
 import {validateM6ExternalConfig} from "../src/lib/experience/m6-proof";
 
 const sender="0x1111111111111111111111111111111111111111";

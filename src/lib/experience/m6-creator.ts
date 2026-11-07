@@ -1,7 +1,6 @@
 import {encodeFunctionData,keccak256,parseUnits,type Hex} from "viem";
 import {z} from "zod";
 import {validateM4TokenDraft} from "./m4-metadata";
-import {m3SocialWritesEnabled} from "../social/m3-social-access";
 import {m6CreatorFactoryAbi} from "./m6-factory-abi";
 import {assertActiveUltraEvmAccount} from "../social/m2-identity";
 import type {UltraEvmWalletProvider} from "../ultra-evm-wallet";
@@ -23,12 +22,6 @@ const draftSchema=z.object({
  pair:z.enum(["ULTRA","LOOKE"])
 }).strict();
 export type M6DraftInput=z.input<typeof draftSchema>;
-export function m6DraftWritesEnabled():boolean{
- return process.env.LOOKE_M6_CREATOR_DRAFT_WRITES_ENABLED==="true" &&
-  m3SocialWritesEnabled() &&
-  process.env.LOOKE_PUBLIC_BETA_ENABLED!=="true" &&
-  (process.env.VERCEL_ENV==="preview" || process.env.NODE_ENV!=="production");
-}
 export function reviewUnsignedM6Creator(input:unknown,nonce:unknown){
  const form=draftSchema.parse(input);
  const validated=validateM4TokenDraft({

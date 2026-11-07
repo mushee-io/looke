@@ -3,7 +3,8 @@ import {type NextRequest,NextResponse} from "next/server";
 import {requireViewer,verifyRequestOrigin,HttpError} from "../../../../lib/social/auth";
 import {query,rateLimit} from "../../../../lib/social/db";
 import {failure,readJson} from "../../../../lib/social/http";
-import {m6DraftWritesEnabled,reviewUnsignedM6Creator} from "../../../../lib/experience/m6-creator";
+import {reviewUnsignedM6Creator} from "../../../../lib/experience/m6-creator";
+import {m6DraftWritesEnabled} from "../../../../lib/experience/m6-creator-gates";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 const headers={"cache-control":"private, no-store","x-robots-tag":"noindex"};
@@ -33,7 +34,9 @@ export async function POST(req:NextRequest){
   await rateLimit(actor,"creator_m6_draft",5,600);
   const data=await readJson(req);
   const nonce=("0x"+randomBytes(32).toString("hex"));
-  const plan=reviewUnsignedM6Creator(data,nonce);
+  let plan:ReturnType<typeof reviewUnsignedM6Creator>;
+  try{plan=reviewUnsignedM6Creator(data,nonce);}
+  catch(error){throw new HttpError(400,error instanceof Error?error.message:"Invalid creator draft.");}
   const saved=await query<{id:string}>(`
    INSERT INTO social_creator_token_intents(owner,token_name,token_symbol,metadata_uri,
      initial_supply_units,pair_preference,client_nonce,calldata_hash)
