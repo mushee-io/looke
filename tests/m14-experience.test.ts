@@ -23,7 +23,7 @@ test("Only LOOKE and ULTRA may be selected as draft pairing options",()=>{
     assert.throws(()=>validateLookePair(invalid),/Only verified/);
   }
 });
-test("Quick creation validates plain names/tickers without minting or publishing image files",()=>{
+test("Quick creation validates drafts; issuance requires wallet, verified factory and genuine receipts",()=>{
   assert.deepEqual(validateQuickTokenDraft(" Ultra Cat "," cat12 ","ULTRA"),
     {name:"Ultra Cat",symbol:"CAT12",pair:"ULTRA"});
   assert.throws(()=>validateQuickTokenDraft("<script>","GOOD","ULTRA"),/Token name/);
@@ -32,7 +32,11 @@ test("Quick creation validates plain names/tickers without minting or publishing
   assert.match(overlays,/URL\.createObjectURL/);
   assert.match(overlays,/URL\.revokeObjectURL/);
   assert.match(overlays,/preview only/);
-  assert.match(home,/disabled=\{true \/\* No approved LOOKE\/ULTRA pairing/);
+  assert.match(home,/disabled=\{submitting \|\| factoryStatus !== "verified" \|\| !address \|\| !onUltra \|\| !preview\}/);
+  assert.match(home,/verifyFactoryDeployment\(source, LOOKE_FACTORY_ADDRESS, LOOKE_FACTORY_DEPLOY_TX\)/);
+  assert.match(home,/eth_sendTransaction/);
+  assert.match(home,/decodeCoinCreatedFromReceipt/);
+  assert.match(home,/verifyCreatedCoinState/);
 });
 test("Main Looke shell exposes approved seven visual flows rather than placeholder links",()=>{
   for(const feature of [
