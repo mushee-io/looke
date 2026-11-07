@@ -59,6 +59,7 @@ const upload=(index:number,action:string,data:Record<string,unknown>={})=>
 
 after(async()=>{
  mock.restoreAll();
+ await query("DELETE FROM social_moderation_audit WHERE moderator=ANY($1::text[])",[address]);
  await query("DELETE FROM social_rate_windows WHERE actor=ANY($1::text[])",[address]);
  await query("DELETE FROM social_auth_challenges WHERE address=ANY($1::text[])",[address]);
  await query("DELETE FROM social_profiles WHERE address=ANY($1::text[])",[address]);
@@ -177,7 +178,7 @@ test("M4 only authorized moderator can approve original attached provider proof,
  assert.equal(proof.evidence.media_status,"approved");
  assert.equal(proof.evidence.post_id,postId);
  const second=await social(2,"moderate",{operation:"approve_media",targetId:postId,reason:"No duplicate approval"});
- assert.equal(second.status,404);
+ assert.equal(second.status,409); // A second moderation request has no pending provider-backed post.
 });
 test("M4 separate feature gate leaves token issuance, financial action and media writes disabled",async()=>{
  const token=await draftPOST(req("/api/experience/creator-draft","POST",0,{
