@@ -148,7 +148,7 @@ export default function TestnetSetup(){
  {deployedFactory&&<p><strong>Factory verified:</strong> <a href={testnetAddressUrl(deployedFactory.address)} target="_blank" rel="noreferrer">{deployedFactory.address}</a>
  <br/>Set <code>NEXT_PUBLIC_LOOKE_FACTORY_ADDRESS</code> = <code>{deployedFactory.address}</code>
  <br/>Set <code>NEXT_PUBLIC_LOOKE_FACTORY_DEPLOY_TX</code> = <code>{deployedFactory.hash}</code></p>}
- </section><hr/><h2>Set up a real V2 liquidity market</h2>
+ </section><p>Need a compatible V2 factory, router, and wrapped Testnet UOS? <Link href="/setup/dex">Deploy the infrastructure through your wallet →</Link></p><hr/><h2>Set up a real V2 liquidity market</h2>
  <form onSubmit={e=>{e.preventDefault();void verify();}}>
  {([[ "V2 factory",factory,setFactory ],[ "V2 router",router,setRouter ],[ "Creator ERC-20 token",base,setBase ],[ "Quote ERC-20 token",quote,setQuote ]] as const).map(([title,value,setValue])=><label key={title}>{title}<input style={inputStyle} value={value} onChange={e=>reset(()=>setValue(e.target.value))} placeholder="0x…" required/></label>)}
  <button disabled={busy}>1. Verify on-chain contracts</button></form>
