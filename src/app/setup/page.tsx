@@ -1,12 +1,12 @@
 "use client";
 import {useState} from "react";
 import Link from "next/link";
-import {createPublicClient,encodeFunctionData,getAddress,http,isAddress,parseUnits,type Address,type Hash} from "viem";
-import {ULTRA_EVM_TESTNET,testnetTxUrl,testnetAddressUrl} from "../../lib/ultra";
+import {encodeFunctionData,getAddress,isAddress,parseUnits,type Address,type Hash} from "viem";
+import {testnetTxUrl,testnetAddressUrl} from "../../lib/ultra";
 import {erc20Abi,v2FactoryAbi,v2PairAbi,v2RouterAbi} from "../../lib/trading";
-import {verifyFactoryDeployment} from "../../lib/verification";
+import {createUltraPublicClient,verifyFactoryDeployment} from "../../lib/verification";
 type Wallet={request:(x:{method:string;params?:unknown[]})=>Promise<unknown>};
-const client=createPublicClient({transport:http(ULTRA_EVM_TESTNET.rpcUrls[0],{timeout:20000})});
+const client=createUltraPublicClient();
 const nonzero=(s:string):Address=>{if(!isAddress(s)||/^0x0{40}$/i.test(s))throw Error("Enter a nonzero contract address.");return getAddress(s);};
 const error=(e:unknown)=>e instanceof Error?e.message:"Ultra Testnet RPC / wallet failure.";
 const factoryAbi=[...v2FactoryAbi,{type:"function",name:"createPair",stateMutability:"nonpayable",inputs:[{name:"tokenA",type:"address"},{name:"tokenB",type:"address"}],outputs:[{name:"pair",type:"address"}]}] as const;
@@ -41,7 +41,7 @@ export default function TestnetSetup(){
    if(file.size>5_000_000)throw Error("Unexpectedly large compiled artifact.");
    const item=JSON.parse(await file.text()) as {contractName?:string;abi?:Array<{name?:string}>;bytecode?:{object?:string;linkReferences?:Record<string,unknown>}};
    const binary=item.bytecode?.object;
-   if(item.contractName!=="LookeCoinFactory"||!item.abi?.some(x=>x.name==="coinCount")||!item.abi.some(x=>x.name==="createCoin")||
+   if((item.contractName!==undefined&&item.contractName!=="LookeCoinFactory")||!item.abi?.some(x=>x.name==="coinCount")||!item.abi.some(x=>x.name==="createCoin")||
     !binary||!/^0x(?:[0-9a-fA-F]{2}){100,}$/.test(binary)||Object.keys(item.bytecode?.linkReferences||{}).length)
     throw Error("Compile the reviewed LookeCoinFactory.sol with Solidity 0.8.24. Invalid, linked or unrecognized artifact.");
    setFactoryCode(binary as `0x${string}`);
