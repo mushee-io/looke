@@ -82,7 +82,11 @@ contract LookeEcosystemTokenTest {
         LookeTokenActor actor = new LookeTokenActor();
         require(!actor.tryTransfer(token, address(0), 1), "zero destination succeeded");
         require(!actor.tryTransfer(token, address(this), 1), "unfunded transfer succeeded");
-        require(!token.transfer(address(0), 1), "zero transfer should revert");
+        try token.transfer(address(0), 1) returns (bool) {
+            revert("zero recipient should revert");
+        } catch {
+            // Revert is expected: no token can be sent to address(0).
+        }
     }
 
     function testNoExternalMintOrAdminSelector() public {
