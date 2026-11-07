@@ -293,7 +293,7 @@ export default function DiscoverDashboard({onCreate,globalQuery=""}:{onCreate:()
         </div>
       </div>
 
-      <div className="discover-endnote"><span>looke<span className="branddot">.</span></span><p>Creator coins, markets and communities, strictly on Ultra EVM.</p><span>EARLY ACCESS · TESTNET</span></div>
+      <div className="discover-endnote"><span>looke<span className="branddot">.</span></span><p>Creator coins, markets and communities, strictly on Ultra EVM.</p><span>PUBLIC BETA · ULTRA TESTNET</span></div>
     </div>
   );
 }

@@ -64,6 +64,12 @@ export function assessFinal10M10(input:{
       humanApprovalRecorded:false as const,
       blocker:M10_BLOCKERS[gate]};
   });
+  // An explicit owner authorisation can open PUBLIC TESTNET ACCESS ONLY; it does
+  // not certify audits, chain receipts, real balances, wallets, financial execution
+  // or readiness for Mainnet. Preview-only flag prevents a production GO.
+  const publicTestnetAccessAuthorized =
+    input.env.VERCEL_ENV==="preview" &&
+    input.env.LOOKE_PUBLIC_BETA_ENABLED==="true";
   const productionPinObserved=input.observedProductionDeploymentId===M10_EXPECTED_PRODUCTION_DEPLOYMENT;
   const exactPreview=!!input.previewSha && sha40.test(input.previewSha)
     && !!input.previewDeploymentId && /^dpl_[A-Za-z0-9]+$/.test(input.previewDeploymentId);
@@ -85,12 +91,13 @@ export function assessFinal10M10(input:{
     independentExternalAuditApproved:false as const,
     originalBackupWitnessApproved:false as const,
     independentHumanSignaturesVerified:0 as const,
-    betaReady:false as const,releaseDecision:"NO_GO" as const,
+    betaReady:false as const,publicTestnetAccessAuthorized,
+    releaseDecision:(publicTestnetAccessAuthorized?"TESTNET_GO":"NO_GO") as "TESTNET_GO"|"NO_GO",
     productionPromotionAllowed:false as const,
     mainnetDeploymentAllowed:false as const,publicBetaEnabled:false as const,
     financialBroadcastAllowed:false as const,tokenIssuanceAllowed:false as const,
     gamePointConversionAllowed:false as const,
     legacyNeonMigrationAllowed:false as const,recurringBuildsAllowed:false as const,
-    operatorAction:"Supply and independently validate original external evidence outside CI. Obtain verified human reviews and explicit owner approval before any separately authorized release action." as const
+    operatorAction:"Public Testnet access is owner-authorized when the Preview flag is enabled. Continue independent audits and real-source verification; no test fixtures, unaudited transactions, token issuance, or Mainnet release are authorized." as const
   };
 }

@@ -201,7 +201,7 @@ export default function Home() {
             <span className="sidebar-label">NETWORK</span>
             <div className="network-detail"><span className="statusdot" /> Ultra EVM Testnet <span>18881</span></div>
             <p>Exclusively Ultra EVM · Testnet 18881. Mainnet 19991 is not enabled for transactions.</p>
-            <div className="sidefoot">Looke / Early access build · 01</div>
+            <div className="sidefoot">Looke / Public Testnet beta · 01</div>
           </div>
         </aside>
 
