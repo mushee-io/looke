@@ -19,7 +19,7 @@
 
 ## Create a genuine liquidity market
 
-A **compatible V2 factory and router** must actually exist on chain **18881**; do not copy an Ethereum or other network address as if it were deployed on Ultra.
+A **compatible V2 factory and router** must actually exist on chain **18881**; do not copy an Ethereum or other network address as if it were deployed on Ultra. The new `/setup/dex` page also supports wallet-only deployments of these prerequisites from reviewed canonical artifacts.
 
 1. Use `/setup` in the public Testnet Preview. Enter the real V2 factory/router, the newly created creator token and a real ERC-20 quote token. All four contracts must have deployed bytecode, the router must link to that factory and the creator token must expose `creator()`.
 2. On your wallet, approve **create pair**, if a pair has not yet been deployed. Use the setup tool to re-read the genuine pair address and verify `getPair`, `token0`, `token1` and `factory()`.
@@ -36,3 +36,16 @@ The separate `LOOKE_SOCIAL_WRITES_ENABLED=true` Preview switch was enabled, but 
 ## Live deployment boundaries
 
 PR branch is draft and stacked on public Testnet PR #48 and wallet execution PR #49. Do not merge predecessors automatically. Production `looke-alpha.vercel.app` stays pinned to `dpl_29EdVrfrJNTC5Q7gkZMcpaxLhQiG`. Report exact SHA and CI before release.
+
+## Bootstrap V2 DEX and wrapped Testnet UOS via /setup/dex
+
+This process uses original upstream Uniswap V2 core/periphery and WETH9 code rather than an invented Looke AMM. Build against the reviewed official sources and their original dependencies and exact compiler settings. Never upload an artifact from an untrusted source or share a private key.
+
+1. Compile a canonical WETH9 artifact with deposit(), withdraw(), balanceOf() and decimals(). On /setup/dex upload its JSON locally and deploy through the user's wallet. Retain the authentic transaction and address.
+2. Compile UniswapV2Factory using the original Uniswap v2-core source and Solidity 0.5.16. Include the original Pair bytecode and dependencies. The in-app factory deployment constructor sets feeToSetter to the deploying Testnet wallet.
+3. Compile UniswapV2Router02 with Uniswap v2-periphery and Solidity 0.6.6, plus original dependencies. The hard-coded INIT_CODE_PAIR_HASH in the router library must match the EXACT deployed UniswapV2Pair init code from step 2. Upload the router JSON, supply original factory and wrapped token addresses, and deploy via wallet.
+4. On /setup/dex wrap a small amount of native Testnet UOS by wallet-approved WETH9 deposit(); the app checks the original on-chain ERC-20 balance increase. Native UOS is not itself an ERC-20; Looke currently uses ERC20/ERC20 pairs.
+5. On /setup supply genuine router, factory, creator coin, and wrapped token; verify bytecode and provenance, create the pair, approve exact amounts, fund two-sided reserves, generate registry JSON and configure Preview LOOKE_M4_MARKETS_JSON.
+6. After new Preview deployment, run a read-only getAmountsOut quote against the funded pool to detect incorrect pair init-code hashes before requesting a swap. A deployed contract alone is not evidence that swaps function.
+
+Original source links: https://github.com/Uniswap/v2-core and https://github.com/Uniswap/v2-periphery. Their upstream licenses and audited release provenance must be reviewed. No autonomous blockchain transactions, fake liquidity or Mainnet releases are provided.
