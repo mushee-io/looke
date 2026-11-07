@@ -1,7 +1,7 @@
 import {type NextRequest,NextResponse} from "next/server";
-import {requireViewer} from "../../../../lib/social/auth";
-import {failure} from "../../../../lib/social/http";
-import {m8OwnerPointsReconciliation} from "../../../../lib/experience/m8-points-reconcile";
+import {requireViewer} from "../../../../../lib/social/auth";
+import {failure} from "../../../../../lib/social/http";
+import {m8OwnerPointsReconciliation} from "../../../../../lib/experience/m8-points-reconcile";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 export async function GET(req:NextRequest){

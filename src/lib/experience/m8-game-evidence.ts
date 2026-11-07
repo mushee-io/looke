@@ -71,7 +71,7 @@ export async function verifyM8GameEvidence(raw:unknown,owner:string,origin:strin
  ]);
  if(!a||!b)throw Error("Original issuer and independent reviewer signed attestations are required.");
  const attestationHash=createHash("sha256").update(message).digest("hex");
- return {owner:getAddress(owner).toLowerCase(),...v,attestationHash,
+ return {...v,owner:getAddress(owner).toLowerCase(),attestationHash,
   status:"quarantined" as const,pointsCredited:0 as const,
   independentlyAuditedOriginalRecord:false as const};
 }

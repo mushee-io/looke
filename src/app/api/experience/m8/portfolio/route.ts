@@ -1,11 +1,11 @@
 import {type NextRequest,NextResponse} from "next/server";
-import {requireViewer} from "../../../../lib/social/auth";
-import {query} from "../../../../lib/social/db";
-import {failure} from "../../../../lib/social/http";
+import {requireViewer} from "../../../../../lib/social/auth";
+import {query} from "../../../../../lib/social/db";
+import {failure} from "../../../../../lib/social/http";
 import {m8MarketAssetList,m8ReadConfirmedBalances,m8ReadConfirmedTransfers}
- from "../../../../lib/experience/m8-portfolio";
-import {m6ReadOnlyClient} from "../../../../lib/experience/m6-chain-proof";
-import type {MarketSnapshot} from "../../../../lib/trading";
+ from "../../../../../lib/experience/m8-portfolio";
+import {m6ReadOnlyClient} from "../../../../../lib/experience/m6-chain-proof";
+import type {MarketSnapshot} from "../../../../../lib/trading";
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
 const headers={"cache-control":"private, no-store","x-robots-tag":"noindex"};
@@ -37,7 +37,7 @@ export async function GET(req:NextRequest){
     creatorTokenStats:null,verifiedMarketExposure:null,impressions:null,profits:null,
     notes:"Source-backed on-platform counts only. On-chain token analytics unavailable without approved original market proofs."},{headers});
   }
-  const {m7VerifiedMarketFeed}=await import("../../../../lib/experience/m7-market-sources");
+  const {m7VerifiedMarketFeed}=await import("../../../../../lib/experience/m7-market-sources");
   const feed=await m7VerifiedMarketFeed();
   if(feed.status!=="verified")return NextResponse.json({status:"blocked",
    ownerScoped:true,verifiedHoldings:null,verifiedTransferActivity:null,
