@@ -6,10 +6,11 @@ import {TrendingFeed,MessagesPanel,NotificationsPanel,ProfilePanel} from "../com
 import {PointsDashboard} from "../components/experience/M19PointsDashboard";
 import {CreateCoinModal,WalletModal,type CoinQuickDraft} from "../components/experience/LookeOverlays";
 import "../components/experience/experience.css";
-import { isAddress } from "viem";
+import { encodeFunctionData, getAddress, isAddress, parseUnits, type Hash } from "viem";
+import { lookeCoinFactoryAbi } from "../lib/coin-abi";
 import { type CoinDraft, validateCoinDraft } from "../lib/metadata";
-import {connectUltraEvmWallet} from "../lib/ultra-evm-wallet";
-import {createUltraPublicClient,verifyFactoryDeployment} from "../lib/verification";
+import {connectUltraEvmWallet, requireUltraEvmTestnet} from "../lib/ultra-evm-wallet";
+import {createUltraPublicClient,verifyFactoryDeployment,decodeCoinCreatedFromReceipt,verifyCreatedCoinState} from "../lib/verification";
 import {
   LOOKE_FACTORY_ADDRESS, LOOKE_FACTORY_DEPLOY_TX, ULTRA_EVM_TESTNET,
   shortAddress, testnetAddressUrl, testnetTxUrl, isLookeTestnetChain,
@@ -163,10 +164,51 @@ export default function Home() {
   }
 
   async function launchCoin() {
-    // No wallet requests, token deployments or pool activations are allowed
-    // until the chosen LOOKE or ULTRA pairing has independently verified
-    // addresses, liquidity/security approval and explicit wallet consent.
-    setNotice("The "+chosenPair+" pairing is not operationally verified. This is a token draft only; no transaction has been prepared.");
+    if (!preview || !address || !onUltra || factoryStatus !== "verified" || submitting) return;
+    const wallet = injectedWallet();
+    if (!wallet) { setNotice("Connect an Ultra EVM Testnet wallet first."); return; }
+    setSubmitting(true); setNotice(""); setTxHash(""); setConfirmedCoin("");
+    setTransactionStatus("idle");
+    let submitted: Hash | null = null;
+    try {
+      // The linked ULTRA/LOOKE market is NOT created by this operation.
+      // Only the existing on-chain creator coin factory may issue a standalone ERC20.
+      const checked = validateCoinDraft(preview);
+      const source = createUltraPublicClient();
+      await requireUltraEvmTestnet(wallet);
+      const accounts = await wallet.request({method:"eth_accounts"}) as string[];
+      if (!accounts?.[0] || !isAddress(accounts[0]) ||
+          getAddress(accounts[0]) !== getAddress(address)) {
+        throw new Error("Connected wallet changed. Reconnect and review your draft.");
+      }
+      await verifyFactoryDeployment(source, LOOKE_FACTORY_ADDRESS, LOOKE_FACTORY_DEPLOY_TX);
+      const supply = parseUnits(checked.supply, 18);
+      if (supply <= 0n) throw new Error("Initial supply must be positive.");
+      const data = encodeFunctionData({abi:lookeCoinFactoryAbi,functionName:"createCoin",
+        args:[checked.name,checked.symbol,checked.metadataURI,supply]});
+      // This requests explicit approval in the user's own wallet. The server
+      // cannot sign and Looke never handles private keys.
+      const raw = await wallet.request({method:"eth_sendTransaction",params:[{
+        from:getAddress(address),to:getAddress(LOOKE_FACTORY_ADDRESS),data
+      }]});
+      if (typeof raw !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(raw))
+        throw new Error("Wallet did not return a valid transaction hash.");
+      submitted=raw as Hash;setTxHash(submitted);setTransactionStatus("submitted");
+      setNotice("Wallet-submitted Testnet token creation is awaiting two confirmations.");
+      const receipt = await source.waitForTransactionReceipt({
+        hash:submitted,confirmations:2,timeout:120_000
+      });
+      const event = decodeCoinCreatedFromReceipt(receipt,getAddress(LOOKE_FACTORY_ADDRESS),{
+        creator:getAddress(address),name:checked.name,symbol:checked.symbol,
+        metadataURI:checked.metadataURI,supply
+      });
+      await verifyCreatedCoinState(source,event);
+      setConfirmedCoin(event.coin);setTransactionStatus("confirmed");
+      setNotice("Creator coin confirmed on Ultra EVM Testnet. Pairing remains separate and requires actual liquidity.");
+    } catch (error) {
+      setTransactionStatus(submitted ? "submitted" : "failed");
+      setNotice(submitted ? "Transaction submitted but not fully verified. Inspect the Testnet explorer before retrying: "+errorMessage(error) : errorMessage(error));
+    } finally {setSubmitting(false);}
   }
 
   return (
@@ -240,12 +282,12 @@ export default function Home() {
                 <div className="preview-panel"><span className="overline">LIVE DRAFT PREVIEW</span><div className="preview-art"><span>✳</span></div><div className="preview-meta"><div><h3>{preview?.name || draft.name || "Your coin"}</h3><p>${preview?.symbol || draft.symbol || "TOKEN"}</p></div><span className="pill">FIXED SUPPLY</span></div><p>{preview?.description || draft.description || "Your creation starts here."}</p><div className="preview-data"><span>SUPPLY</span><strong>{preview?.supply || "—"}</strong></div><div className="preview-data"><span>NETWORK</span><strong>Ultra EVM · 18881</strong></div><div className="preview-data"><span>FACTORY</span><strong>{factoryStatus === "verified" ? shortAddress(LOOKE_FACTORY_ADDRESS) : "Not verified"}</strong></div>
                   <div className="preview-data"><span>DEPLOYMENT PROOF</span><strong>{factoryStatus === "verified" ? "Verified · 2+ confirmations" : factoryStatus === "checking" ? "Checking testnet receipt…" : "Not available"}</strong></div>
                   <button className="launch-button"
-                    disabled={true /* No approved LOOKE/ULTRA pairing; prevent unpaired launch. */}
+                    disabled={submitting || factoryStatus !== "verified" || !address || !onUltra || !preview}
                     onClick={launchCoin}>
                     {submitting ? "Checking wallet / transaction…" : transactionStatus === "confirmed" ? "Verified on Ultra Testnet ✓" : transactionStatus === "submitted" ? "Awaiting independent verification" : "Launch on Ultra Testnet ↗"}
                   </button>
-                  <p className="disabled-reason">Pair creation requires independently reviewed ULTRA/LOOKE assets, liquidity and explicit wallet approval. Draft previews remain available.</p>
-                  <p className="disabled-reason">M6 factory candidate: zero platform creation fee (0 UOS). Additional network gas is unknown until wallet review. ULTRA/LOOKE is a pairing preference only; no liquidity or token issuance has been approved.</p>
+                  <p className="disabled-reason">ERC20 creator issuance requires a verified Testnet factory and your wallet approval. ULTRA/LOOKE liquidity pairing is a separate action.</p>
+                  <p className="disabled-reason">Testnet gas is shown by your wallet. Never approve an unexpected contract. The selected pairing preference does not create liquidity.</p>
                   {factoryStatus !== "verified" && <p className="disabled-reason" role="status">Factory: {factoryReason || (factoryStatus === "checking" ? "Checking deployment receipt…" : "Not configured.")}</p>}
                   {factoryStatus === "verified" && !address && <p className="disabled-reason">Connect your wallet to enable launching.</p>}
                   {address && !onUltra && <p className="disabled-reason">Switch your wallet to Ultra EVM Testnet.</p>}
