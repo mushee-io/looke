@@ -8,7 +8,7 @@ import {CreateCoinModal,WalletModal,type CoinQuickDraft} from "../components/exp
 import "../components/experience/experience.css";
 import { encodeFunctionData, getAddress, isAddress, parseUnits, type Hash } from "viem";
 import { lookeCoinFactoryAbi } from "../lib/coin-abi";
-import { LOOKE_FACTORY_CREATION_CODE } from "../lib/verified-factory-bytecode";
+import { LOOKE_FACTORY_CREATION_CODE,assertVerifiedFactoryRuntime } from "../lib/verified-factory-bytecode";
 import { type CoinDraft, validateCoinDraft } from "../lib/metadata";
 import {connectUltraEvmWallet, requireUltraEvmTestnet} from "../lib/ultra-evm-wallet";
 import {createUltraPublicClient,verifyFactoryDeployment,decodeCoinCreatedFromReceipt,verifyCreatedCoinState} from "../lib/verification";
@@ -127,7 +127,7 @@ export default function Home() {
     let active = true;
     setFactoryStatus("checking");
     void verifyFactoryDeployment(createUltraPublicClient(), factoryAddress, factoryDeployTx)
-      .then(() => { if (active) { setFactoryStatus("verified"); setFactoryReason(""); } })
+      .then(proof => { assertVerifiedFactoryRuntime(proof.runtimeCode); if (active) { setFactoryStatus("verified"); setFactoryReason(""); } })
       .catch(error => {
         if (active) {
           setFactoryStatus("invalid");
@@ -161,6 +161,7 @@ export default function Home() {
       if(receipt.status!=="success"||receipt.to!==null||!receipt.contractAddress)
         throw new Error("Creator factory transaction did not deploy a contract.");
       const verified=await verifyFactoryDeployment(source,receipt.contractAddress,hash);
+      assertVerifiedFactoryRuntime(verified.runtimeCode);
       const proof={address:verified.address,hash};
       window.localStorage.setItem("looke:ultra18881:creator-factory",JSON.stringify(proof));
       setFactoryAddress(verified.address);setFactoryDeployTx(hash);
@@ -235,7 +236,7 @@ export default function Home() {
           getAddress(accounts[0]) !== getAddress(address)) {
         throw new Error("Connected wallet changed. Reconnect and review your draft.");
       }
-      await verifyFactoryDeployment(source, factoryAddress, factoryDeployTx);
+      assertVerifiedFactoryRuntime((await verifyFactoryDeployment(source, factoryAddress, factoryDeployTx)).runtimeCode);
       const supply = parseUnits(checked.supply, 18);
       if (supply <= 0n) throw new Error("Initial supply must be positive.");
       const data = encodeFunctionData({abi:lookeCoinFactoryAbi,functionName:"createCoin",
