@@ -64,7 +64,7 @@ export async function requireViewer(req:NextRequest):Promise<ViewerRow>{
   if(v.suspended)throw new HttpError(403,"This profile is suspended.");
   return v;
 }
-export async function createChallenge(wallet:string,origin:string){
+export async function createChallenge(wallet:string,origin:string=socialOrigin()){
   if(!socialAllowedOrigins().includes(origin))throw new HttpError(403,"Request origin does not match Looke.");
   if(!identityWritesEnabled())throw new HttpError(503,"Looke wallet identity is disabled pending approved database and origin setup.");
   const addr=address.parse(wallet);
