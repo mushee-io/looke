@@ -33,7 +33,10 @@ test("Quick creation validates drafts; issuance requires wallet, verified factor
   assert.match(overlays,/URL\.revokeObjectURL/);
   assert.match(overlays,/preview only/);
   assert.match(home,/disabled=\{submitting \|\| factoryStatus !== "verified" \|\| !address \|\| !onUltra \|\| !preview\}/);
-  assert.match(home,/verifyFactoryDeployment\(source, LOOKE_FACTORY_ADDRESS, LOOKE_FACTORY_DEPLOY_TX\)/);
+  assert.match(home,/verifyFactoryDeployment\(source, factoryAddress, factoryDeployTx\)/);
+  assert.match(home,/assertVerifiedFactoryRuntime/);
+  assert.match(home,/window\.localStorage\.setItem/);
+  assert.match(home,/Deploy creator factory on Ultra Testnet/);
   assert.match(home,/eth_sendTransaction/);
   assert.match(home,/decodeCoinCreatedFromReceipt/);
   assert.match(home,/verifyCreatedCoinState/);

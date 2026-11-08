@@ -5,6 +5,7 @@ import {encodeFunctionData,getAddress,isAddress,parseUnits,type Address,type Has
 import {testnetTxUrl,testnetAddressUrl} from "../../lib/ultra";
 import {erc20Abi,v2FactoryAbi,v2PairAbi,v2RouterAbi} from "../../lib/trading";
 import {createUltraPublicClient,verifyFactoryDeployment} from "../../lib/verification";
+import {LOOKE_FACTORY_CREATION_CODE,assertVerifiedFactoryRuntime} from "../../lib/verified-factory-bytecode";
 type Wallet={request:(x:{method:string;params?:unknown[]})=>Promise<unknown>};
 const client=createUltraPublicClient();
 const nonzero=(s:string):Address=>{if(!isAddress(s)||/^0x0{40}$/i.test(s))throw Error("Enter a nonzero contract address.");return getAddress(s);};
@@ -32,37 +33,25 @@ export default function TestnetSetup(){
  const [factory,setFactory]=useState(""),[router,setRouter]=useState(""),[base,setBase]=useState(""),[quote,setQuote]=useState("");
  const [a,setA]=useState(""),[b,setB]=useState(""),[marketId,setMarketId]=useState("looke-ultra");
  const [checked,setChecked]=useState<ContractSet|null>(null),[status,setStatus]=useState(""),[tx,setTx]=useState(""),[registry,setRegistry]=useState(""),[busy,setBusy]=useState(false);
- const [factoryCode,setFactoryCode]=useState<`0x${string}`|null>(null),[deployedFactory,setDeployedFactory]=useState<{address:Address;hash:Hash}|null>(null);
+ const [deployedFactory,setDeployedFactory]=useState<{address:Address;hash:Hash}|null>(null);
  const reset=(fn:()=>void)=>{fn();setChecked(null);setRegistry("");setStatus("");};
- async function importFactoryArtifact(file:File|undefined){
-  setFactoryCode(null);setDeployedFactory(null);
-  if(!file)return;
-  try{
-   if(file.size>5_000_000)throw Error("Unexpectedly large compiled artifact.");
-   const item=JSON.parse(await file.text()) as {contractName?:string;abi?:Array<{name?:string}>;bytecode?:{object?:string;linkReferences?:Record<string,unknown>}};
-   const binary=item.bytecode?.object;
-   if((item.contractName!==undefined&&item.contractName!=="LookeCoinFactory")||!item.abi?.some(x=>x.name==="coinCount")||!item.abi.some(x=>x.name==="createCoin")||
-    !binary||!/^0x(?:[0-9a-fA-F]{2}){100,}$/.test(binary)||Object.keys(item.bytecode?.linkReferences||{}).length)
-    throw Error("Compile the reviewed LookeCoinFactory.sol with Solidity 0.8.24. Invalid, linked or unrecognized artifact.");
-   setFactoryCode(binary as `0x${string}`);
-   setStatus("Artifact loaded locally. Inspect source and bytecode in your compiler before signing deployment.");
-  }catch(e){setStatus(error(e));}
- }
  async function deployFactory(){
-  if(!factoryCode||busy)return;
+  if(busy)return;
   setBusy(true);setDeployedFactory(null);setStatus("");
   try{
    const {wallet,account}=await operator();
-   const raw=await wallet.request({method:"eth_sendTransaction",params:[{from:account,data:factoryCode}]});
+   const raw=await wallet.request({method:"eth_sendTransaction",params:[{from:account,data:LOOKE_FACTORY_CREATION_CODE}]});
    if(typeof raw!=="string"||!/^0x[0-9a-fA-F]{64}$/.test(raw))throw Error("Wallet returned no valid deployment hash.");
    const hash=raw as Hash;setTx(hash);
    const receipt=await client.waitForTransactionReceipt({hash,confirmations:2,timeout:120000});
    if(receipt.status!=="success"||receipt.to!==null||!receipt.contractAddress)
      throw Error("Factory deployment transaction was not successful. Inspect the explorer.");
    const deployed=getAddress(receipt.contractAddress);
-   await verifyFactoryDeployment(client,deployed,hash);
+   assertVerifiedFactoryRuntime((await verifyFactoryDeployment(client,deployed,hash)).runtimeCode);
+   window.localStorage.setItem("looke:ultra18881:creator-factory",
+     JSON.stringify({address:deployed,hash}));
    setDeployedFactory({address:deployed,hash});
-   setStatus("Factory deployment independently verified on Ultra EVM Testnet. Copy both original identifiers to Vercel Preview and redeploy.");
+   setStatus("Factory independently verified on Ultra EVM Testnet. Open Create to launch a token immediately. The verified address is saved in this browser.");
   }catch(e){setStatus(error(e));}finally{setBusy(false);}
  }
 
@@ -139,16 +128,15 @@ export default function TestnetSetup(){
  const inputStyle={display:"block" as const,width:"100%",padding:10};
  return <main style={{maxWidth:780,margin:"3rem auto",padding:20,fontFamily:"system-ui",lineHeight:1.6}}>
  <Link href="/">← Looke home</Link><h1>Ultra EVM Testnet launch</h1>
- <p>Deploy <code>LookeCoinFactory.sol</code> with an injected wallet in Remix, then configure its address and original deployment transaction as <code>NEXT_PUBLIC_LOOKE_FACTORY_ADDRESS</code> and <code>NEXT_PUBLIC_LOOKE_FACTORY_DEPLOY_TX</code>. Trading needs an existing genuine V2-compatible factory and router on chain 18881.</p>
+ <p>Deploy LookeCoinFactory on chain 18881 with your connected wallet. The factory contract is precompiled and its deployment is verified against the actual Testnet receipt. Trading still needs real on-chain liquidity.</p>
  <p><strong>Wallet-only actions:</strong> each pair creation, approval and liquidity deposit needs your confirmation. No private keys, synthetic tokens, or automatic transactions.</p>
  <section style={{padding:16,border:"1px solid #888",borderRadius:10}}><h2>Official LOOKE ecosystem token</h2><p>Deploy the fixed-supply 100,000,000 LOOKE token on Ultra EVM Testnet to your own wallet, independent of the creator coin factory.</p><Link href="/setup/looke">Deploy official LOOKE token →</Link></section>
  <section><h2>Deploy Looke creator coin factory</h2>
- <p>Build <code>contracts/LookeCoinFactory.sol</code> using the reviewed Foundry project. Upload its local compiler artifact from <code>out/LookeCoinFactory.sol/LookeCoinFactory.json</code>. The source stays on your computer; only your wallet signs the deployment to chain 18881.</p>
- <label>Foundry compiled artifact JSON <input type="file" accept=".json" onChange={e=>void importFactoryArtifact(e.target.files?.[0])}/></label>
- <p><button type="button" disabled={busy||!factoryCode} onClick={()=>void deployFactory()}>Deploy factory using my own Testnet wallet</button></p>
+ <p>Use the reviewed, precompiled LookeCoinFactory Solidity 0.8.24 artifact. No compiler setup or file upload is required; your wallet approves the Testnet transaction.</p>
+ <p><button type="button" disabled={busy} onClick={()=>void deployFactory()}>{busy?"Deploying and verifying…":"Deploy creator factory on Testnet ↗"}</button></p>
  {deployedFactory&&<p><strong>Factory verified:</strong> <a href={testnetAddressUrl(deployedFactory.address)} target="_blank" rel="noreferrer">{deployedFactory.address}</a>
- <br/>Set <code>NEXT_PUBLIC_LOOKE_FACTORY_ADDRESS</code> = <code>{deployedFactory.address}</code>
- <br/>Set <code>NEXT_PUBLIC_LOOKE_FACTORY_DEPLOY_TX</code> = <code>{deployedFactory.hash}</code></p>}
+ <br/>Transaction <a href={testnetTxUrl(deployedFactory.hash)} target="_blank" rel="noreferrer">{deployedFactory.hash}</a>
+ <br/><Link href="/">Open Create →</Link></p>}
  </section><p>Need a compatible V2 factory, router, and wrapped Testnet UOS? <Link href="/setup/dex">Deploy the infrastructure through your wallet →</Link></p><hr/><h2>Set up a real V2 liquidity market</h2>
  <form onSubmit={e=>{e.preventDefault();void verify();}}>
  {([[ "V2 factory",factory,setFactory ],[ "V2 router",router,setRouter ],[ "Creator ERC-20 token",base,setBase ],[ "Quote ERC-20 token",quote,setQuote ]] as const).map(([title,value,setValue])=><label key={title}>{title}<input style={inputStyle} value={value} onChange={e=>reset(()=>setValue(e.target.value))} placeholder="0x…" required/></label>)}
