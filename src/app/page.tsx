@@ -8,6 +8,7 @@ import {CreateCoinModal,WalletModal,type CoinQuickDraft} from "../components/exp
 import "../components/experience/experience.css";
 import { encodeFunctionData, getAddress, isAddress, parseUnits, type Hash } from "viem";
 import { lookeCoinFactoryAbi } from "../lib/coin-abi";
+import { LOOKE_FACTORY_CREATION_CODE } from "../lib/verified-factory-bytecode";
 import { type CoinDraft, validateCoinDraft } from "../lib/metadata";
 import {connectUltraEvmWallet, requireUltraEvmTestnet} from "../lib/ultra-evm-wallet";
 import {createUltraPublicClient,verifyFactoryDeployment,decodeCoinCreatedFromReceipt,verifyCreatedCoinState} from "../lib/verification";
@@ -53,9 +54,13 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false);
   const [factoryStatus, setFactoryStatus] = useState<"missing" | "checking" | "verified" | "invalid">("missing");
   const [factoryReason, setFactoryReason] = useState("");
+  const [factoryAddress,setFactoryAddress] = useState(LOOKE_FACTORY_ADDRESS);
+  const [factoryDeployTx,setFactoryDeployTx] = useState(LOOKE_FACTORY_DEPLOY_TX);
+  const [factoryDeploying,setFactoryDeploying] = useState(false);
+  const [factoryDeploymentHash,setFactoryDeploymentHash] = useState("");
   const [transactionStatus, setTransactionStatus] = useState<"idle" | "submitted" | "confirmed" | "failed">("idle");
   const [confirmedCoin, setConfirmedCoin] = useState("");
-  const factoryConfigured = isAddress(LOOKE_FACTORY_ADDRESS) && /^0x[\da-fA-F]{64}$/.test(LOOKE_FACTORY_DEPLOY_TX);
+  const factoryConfigured = isAddress(factoryAddress) && /^0x[\da-fA-F]{64}$/.test(factoryDeployTx);
   const onUltra = isLookeTestnetChain(chain);
   const screens: Screen[] = ["Discover","Trending","Messages","Create","Notifications","Points","Wallet","Profile"];
   const icons: Record<Screen,string> = {
@@ -98,6 +103,21 @@ export default function Home() {
     };
   }, []);
 
+  // Remember a real, wallet-approved Testnet factory in this browser so a user can
+  // immediately create tokens without waiting for a Vercel environment redeploy.
+  // Every saved address is still independently reverified against its original receipt.
+  useEffect(()=>{
+    if(isAddress(LOOKE_FACTORY_ADDRESS)&&/^0x[\\da-fA-F]{64}$/.test(LOOKE_FACTORY_DEPLOY_TX))return;
+    try{
+      const raw=window.localStorage.getItem("looke:ultra18881:creator-factory");
+      if(!raw)return;
+      const proof=JSON.parse(raw) as {address?:string;hash?:string};
+      if(proof.address&&isAddress(proof.address)&&proof.hash&&/^0x[\\da-fA-F]{64}$/.test(proof.hash)){
+        setFactoryAddress(getAddress(proof.address));setFactoryDeployTx(proof.hash);
+      }
+    }catch{ /* Untrusted browser storage must never be treated as on-chain proof. */ }
+  },[]);
+
   useEffect(() => {
     if (!factoryConfigured) {
       setFactoryStatus("missing");
@@ -106,7 +126,7 @@ export default function Home() {
     }
     let active = true;
     setFactoryStatus("checking");
-    void verifyFactoryDeployment(createUltraPublicClient(), LOOKE_FACTORY_ADDRESS, LOOKE_FACTORY_DEPLOY_TX)
+    void verifyFactoryDeployment(createUltraPublicClient(), factoryAddress, factoryDeployTx)
       .then(() => { if (active) { setFactoryStatus("verified"); setFactoryReason(""); } })
       .catch(error => {
         if (active) {
@@ -115,7 +135,41 @@ export default function Home() {
         }
       });
     return () => { active = false; };
-  }, [factoryConfigured]);
+  }, [factoryConfigured,factoryAddress,factoryDeployTx]);
+
+  async function deployFactory(){
+    if(factoryDeploying||submitting)return;
+    const wallet=injectedWallet();
+    if(!wallet){setNotice("Install an EVM wallet to deploy the factory on Ultra Testnet.");return;}
+    setFactoryDeploying(true);setFactoryDeploymentHash("");setNotice("");
+    try{
+      const source=createUltraPublicClient();
+      if(await source.getChainId()!==18881)throw new Error("Ultra EVM Testnet RPC is not on chain 18881.");
+      const account=await connectUltraEvmWallet(wallet);
+      await requireUltraEvmTestnet(wallet);
+      setAddress(account);setChain(String(await wallet.request({method:"eth_chainId"})));
+      if(!/^0x(?:[0-9a-fA-F]{2}){100,}$/.test(LOOKE_FACTORY_CREATION_CODE))
+        throw new Error("Reviewed factory deployment bytecode is unavailable.");
+      const raw=await wallet.request({method:"eth_sendTransaction",params:[{
+        from:account,data:LOOKE_FACTORY_CREATION_CODE
+      }]});
+      if(typeof raw!=="string"||!/^0x[0-9a-fA-F]{64}$/.test(raw))
+        throw new Error("Wallet did not provide a valid Testnet factory transaction.");
+      const hash=raw as Hash;setFactoryDeploymentHash(hash);
+      setNotice("Factory deployment submitted. Checking two Testnet confirmations.");
+      const receipt=await source.waitForTransactionReceipt({hash,confirmations:2,timeout:120_000});
+      if(receipt.status!=="success"||receipt.to!==null||!receipt.contractAddress)
+        throw new Error("Creator factory transaction did not deploy a contract.");
+      const verified=await verifyFactoryDeployment(source,receipt.contractAddress,hash);
+      const proof={address:verified.address,hash};
+      window.localStorage.setItem("looke:ultra18881:creator-factory",JSON.stringify(proof));
+      setFactoryAddress(verified.address);setFactoryDeployTx(hash);
+      setFactoryStatus("verified");setFactoryReason("");
+      setNotice("Creator factory verified on Ultra EVM Testnet. You can now review and launch a token.");
+    }catch(error){
+      setNotice(errorMessage(error)+(factoryDeploymentHash?" Verify your transaction before retrying.":""));
+    }finally{setFactoryDeploying(false);}
+  }
 
   async function connectWallet() {
     const provider = injectedWallet();
@@ -181,7 +235,7 @@ export default function Home() {
           getAddress(accounts[0]) !== getAddress(address)) {
         throw new Error("Connected wallet changed. Reconnect and review your draft.");
       }
-      await verifyFactoryDeployment(source, LOOKE_FACTORY_ADDRESS, LOOKE_FACTORY_DEPLOY_TX);
+      await verifyFactoryDeployment(source, factoryAddress, factoryDeployTx);
       const supply = parseUnits(checked.supply, 18);
       if (supply <= 0n) throw new Error("Initial supply must be positive.");
       const data = encodeFunctionData({abi:lookeCoinFactoryAbi,functionName:"createCoin",
@@ -189,7 +243,7 @@ export default function Home() {
       // This requests explicit approval in the user's own wallet. The server
       // cannot sign and Looke never handles private keys.
       const raw = await wallet.request({method:"eth_sendTransaction",params:[{
-        from:getAddress(address),to:getAddress(LOOKE_FACTORY_ADDRESS),data
+        from:getAddress(address),to:getAddress(factoryAddress),data
       }]});
       if (typeof raw !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(raw))
         throw new Error("Wallet did not return a valid transaction hash.");
@@ -198,7 +252,7 @@ export default function Home() {
       const receipt = await source.waitForTransactionReceipt({
         hash:submitted,confirmations:2,timeout:120_000
       });
-      const event = decodeCoinCreatedFromReceipt(receipt,getAddress(LOOKE_FACTORY_ADDRESS),{
+      const event = decodeCoinCreatedFromReceipt(receipt,getAddress(factoryAddress),{
         creator:getAddress(address),name:checked.name,symbol:checked.symbol,
         metadataURI:checked.metadataURI,supply
       });
@@ -279,8 +333,14 @@ export default function Home() {
                   <button className="primary form-submit" type="submit">Review coin draft <span>→</span></button>
                   <p className="field-hint">Looke doesn't upload files yet. Host JSON metadata separately; preview validation does not verify remote content.</p>
                 </form>
-                <div className="preview-panel"><span className="overline">LIVE DRAFT PREVIEW</span><div className="preview-art"><span>✳</span></div><div className="preview-meta"><div><h3>{preview?.name || draft.name || "Your coin"}</h3><p>${preview?.symbol || draft.symbol || "TOKEN"}</p></div><span className="pill">FIXED SUPPLY</span></div><p>{preview?.description || draft.description || "Your creation starts here."}</p><div className="preview-data"><span>SUPPLY</span><strong>{preview?.supply || "—"}</strong></div><div className="preview-data"><span>NETWORK</span><strong>Ultra EVM · 18881</strong></div><div className="preview-data"><span>FACTORY</span><strong>{factoryStatus === "verified" ? shortAddress(LOOKE_FACTORY_ADDRESS) : "Not verified"}</strong></div>
+                <div className="preview-panel"><span className="overline">LIVE DRAFT PREVIEW</span><div className="preview-art"><span>✳</span></div><div className="preview-meta"><div><h3>{preview?.name || draft.name || "Your coin"}</h3><p>${preview?.symbol || draft.symbol || "TOKEN"}</p></div><span className="pill">FIXED SUPPLY</span></div><p>{preview?.description || draft.description || "Your creation starts here."}</p><div className="preview-data"><span>SUPPLY</span><strong>{preview?.supply || "—"}</strong></div><div className="preview-data"><span>NETWORK</span><strong>Ultra EVM · 18881</strong></div><div className="preview-data"><span>FACTORY</span><strong>{factoryStatus === "verified" ? shortAddress(factoryAddress) : "Not verified"}</strong></div>
                   <div className="preview-data"><span>DEPLOYMENT PROOF</span><strong>{factoryStatus === "verified" ? "Verified · 2+ confirmations" : factoryStatus === "checking" ? "Checking testnet receipt…" : "Not available"}</strong></div>
+                  {factoryStatus!=="verified"&&<button type="button" className="launch-button"
+                    disabled={factoryDeploying||submitting} onClick={()=>void deployFactory()}>
+                    {factoryDeploying?"Deploying factory / confirming…":"Deploy creator factory on Ultra Testnet ↗"}
+                  </button>}
+                  {factoryDeploymentHash&&<p className="disabled-reason">Factory transaction: <a href={testnetTxUrl(factoryDeploymentHash)} target="_blank" rel="noopener noreferrer">View on Ultra Testnet explorer ↗</a></p>}
+                  {factoryStatus==="verified"&&<p className="disabled-reason">Verified factory: <a href={testnetAddressUrl(factoryAddress)} target="_blank" rel="noopener noreferrer">{shortAddress(factoryAddress)}</a></p>}
                   <button className="launch-button"
                     disabled={submitting || factoryStatus !== "verified" || !address || !onUltra || !preview}
                     onClick={launchCoin}>
