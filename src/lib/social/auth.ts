@@ -11,16 +11,33 @@ const SEVEN_DAYS_MS=7*24*3600*1000;
 export function socialOrigin() {
   const raw=process.env.LOOKE_SOCIAL_APP_ORIGIN || (process.env.NODE_ENV==="production"?"":"http://localhost:3000");
   if(!raw)throw new Error("LOOKE_SOCIAL_APP_ORIGIN must be configured in production.");
-  const url=new URL(raw);
-  if(url.origin!==raw || !["https:","http:"].includes(url.protocol) || (process.env.NODE_ENV==="production" && url.protocol!=="https:")) {
+  return validateSocialOrigin(raw);
+}
+
+/** All accepted browser origins must be explicitly configured; never trust arbitrary Host headers. */
+function validateSocialOrigin(raw:string):string {
+  let url:URL;
+  try{url=new URL(raw);}catch{throw new Error("Invalid social application origin.");}
+  if(url.origin!==raw || !["https:","http:"].includes(url.protocol) ||
+    (process.env.NODE_ENV==="production" && url.protocol!=="https:")){
     throw new Error("Invalid social application origin.");
   }
   return raw;
 }
-export function verifyRequestOrigin(req:NextRequest){
-  if(req.headers.get("origin")!==socialOrigin())throw new HttpError(403,"Request origin does not match Looke.");
+export function socialAllowedOrigins():string[] {
+  const primary=socialOrigin();
+  const additional=(process.env.LOOKE_SOCIAL_ADDITIONAL_ORIGINS||"").split(",")
+    .map(value=>value.trim()).filter(Boolean).map(validateSocialOrigin);
+  return [...new Set([primary,...additional])];
+}
+export function verifyRequestOrigin(req:NextRequest):string{
+  const origin=req.headers.get("origin");
+  if(!origin || !socialAllowedOrigins().includes(origin))
+    throw new HttpError(403,"Request origin does not match Looke.");
   const type=req.headers.get("content-type")||"";
-  if(!type.toLowerCase().startsWith("application/json"))throw new HttpError(415,"JSON content type required.");
+  if(!type.toLowerCase().startsWith("application/json"))
+    throw new HttpError(415,"JSON content type required.");
+  return origin;
 }
 
 export function writesEnabled() {return process.env.LOOKE_SOCIAL_WRITES_ENABLED==="true";}
@@ -47,7 +64,8 @@ export async function requireViewer(req:NextRequest):Promise<ViewerRow>{
   if(v.suspended)throw new HttpError(403,"This profile is suspended.");
   return v;
 }
-export async function createChallenge(wallet:string){
+export async function createChallenge(wallet:string,origin:string){
+  if(!socialAllowedOrigins().includes(origin))throw new HttpError(403,"Request origin does not match Looke.");
   if(!identityWritesEnabled())throw new HttpError(503,"Looke wallet identity is disabled pending approved database and origin setup.");
   const addr=address.parse(wallet);
   await rateLimit(addr,"challenge",5,300);
@@ -55,7 +73,7 @@ export async function createChallenge(wallet:string){
   const nonce=randomBytes(16).toString("hex");
   const issued=new Date(), expires=new Date(issued.getTime()+5*60_000);
   const message=signInMessage({
-    origin:socialOrigin(),address:addr,nonce,
+    origin,address:addr,nonce,
     issued:issued.toISOString(),expires:expires.toISOString(),
   });
   await query(`INSERT INTO social_auth_challenges(id,address,message,expires_at) VALUES($1,$2,$3,$4)`,[id,addr,message,expires]);
