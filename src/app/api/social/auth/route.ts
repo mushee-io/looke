@@ -18,12 +18,12 @@ export async function GET(req:NextRequest){
 
 export async function POST(req:NextRequest){
   try{
-    verifyRequestOrigin(req);
+    const requestOrigin=verifyRequestOrigin(req);
     const input=await readJson(req);
     const action=input.action;
     if(action==="challenge"){
       const data=challenge.parse({address:input.address});
-      return NextResponse.json(await createChallenge(data.address),{headers:{"cache-control":"no-store"}});
+      return NextResponse.json(await createChallenge(data.address,requestOrigin),{headers:{"cache-control":"no-store"}});
     }
     if(action==="verify"){
       const data=signature.parse({challengeId:input.challengeId,signature:input.signature});
