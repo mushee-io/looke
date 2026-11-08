@@ -5,7 +5,7 @@ import {encodeFunctionData,getAddress,isAddress,parseUnits,type Address,type Has
 import {testnetTxUrl,testnetAddressUrl} from "../../lib/ultra";
 import {erc20Abi,v2FactoryAbi,v2PairAbi,v2RouterAbi} from "../../lib/trading";
 import {createUltraPublicClient,verifyFactoryDeployment} from "../../lib/verification";
-import {LOOKE_FACTORY_CREATION_CODE} from "../../lib/verified-factory-bytecode";
+import {LOOKE_FACTORY_CREATION_CODE,assertVerifiedFactoryRuntime} from "../../lib/verified-factory-bytecode";
 type Wallet={request:(x:{method:string;params?:unknown[]})=>Promise<unknown>};
 const client=createUltraPublicClient();
 const nonzero=(s:string):Address=>{if(!isAddress(s)||/^0x0{40}$/i.test(s))throw Error("Enter a nonzero contract address.");return getAddress(s);};
@@ -47,7 +47,7 @@ export default function TestnetSetup(){
    if(receipt.status!=="success"||receipt.to!==null||!receipt.contractAddress)
      throw Error("Factory deployment transaction was not successful. Inspect the explorer.");
    const deployed=getAddress(receipt.contractAddress);
-   await verifyFactoryDeployment(client,deployed,hash);
+   assertVerifiedFactoryRuntime((await verifyFactoryDeployment(client,deployed,hash)).runtimeCode);
    window.localStorage.setItem("looke:ultra18881:creator-factory",
      JSON.stringify({address:deployed,hash}));
    setDeployedFactory({address:deployed,hash});
