@@ -12,7 +12,10 @@ test("Testnet factory is deployed only with explicit browser wallet approval and
  assert.match(setup,/verifyFactoryDeployment\(client,deployed,hash\)/);
  assert.match(setup,/confirmations:2/);
  assert.match(setup,/receipt\.to!==null/);
- assert.match(setup,/coinCount/);
+ assert.match(setup,/assertVerifiedFactoryRuntime/);
+ assert.match(setup,/LOOKE_FACTORY_CREATION_CODE/);
+ const verification=readFileSync("src/lib/verification.ts","utf8");
+ assert.match(verification,/coinCount/);
  assert.doesNotMatch(setup,/privateKey|mnemonic|walletClient\.signTransaction/i);
 });
 test("Only genuine V2 contract provenance enables pair creation",()=>{
