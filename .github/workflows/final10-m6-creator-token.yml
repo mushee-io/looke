@@ -32,6 +32,11 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
       - name: Compile M6 Solidity with no deployment
         run: forge build
+      - name: Print reviewed creator factory creation bytecode for one-click Testnet setup
+        run: |
+          echo "LOOKE_FACTORY_CREATION_CODE_BEGIN"
+          forge inspect contracts/LookeCoinFactory.sol:LookeCoinFactory bytecode
+          echo "LOOKE_FACTORY_CREATION_CODE_END"
       - name: Test nonce replay, distinct wallets, supply and declared zero fee
         run: forge test --match-contract LookeFinal10M6Test -vv
       - name: All existing contract regressions
