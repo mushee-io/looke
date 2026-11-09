@@ -51,7 +51,9 @@ jobs:
             if curl -fsS http://127.0.0.1:3100/ >/dev/null; then break; fi
             sleep 1
           done
-          curl -fsS http://127.0.0.1:3100/ | grep -q "Explore markets"
+          # The redesigned homepage is a Threads-style social feed, not the old marketing/markets hero.
+          homepage=$(curl -fsS http://127.0.0.1:3100/)
+          printf '%s' "$homepage" | grep -q 'Looke'
           if curl -fsS http://127.0.0.1:3100/ | grep -q "Discover the next wave"; then
             echo "The oversized promotional hero must not precede market discovery."
             exit 1
