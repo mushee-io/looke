@@ -1,0 +1,4 @@
+Redeployment trigger for Looke production.
+Branch: main
+Source commit: 3aeeeb897877320314f730a3dde78a085c62eeb0
+Purpose: trigger Vercel production via GitHub push without modifying app code.
