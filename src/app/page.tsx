@@ -200,7 +200,7 @@ export default function Home() {
             <input type="search" value={globalSearch} onChange={e=>setGlobalSearch(e.target.value)}
               aria-label="Search Looke creators and markets" placeholder="Search Looke..."/>
             {globalSearch&&<button type="button" aria-label="Clear search" onClick={()=>setGlobalSearch("")}>×</button>}
-          </div> : <h1>{screen === "Home" ? "Home" : screen === "Uniq NFTs" ? "NFTs" : screen === "Discover" ? "Search" : screen}</h1>}
+          </div> : <h1>{screen === "Home" ? "Home" : screen === "Uniq NFTs" ? "NFTs" : screen}</h1>}
         </div>
         <button className="wallet" onClick={()=>{if(address)setShowWallet(true);else void connectWallet();}} disabled={walletBusy}>
           <span className="wallet-led" /> {walletBusy ? "Connecting…" : address ? shortAddress(address) : "Connect wallet"} <span aria-hidden="true">↗</span>
