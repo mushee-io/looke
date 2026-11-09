@@ -3,7 +3,7 @@ body:has(.looke-threads){background:#0a0a0b;color:#f6f6f6;color-scheme:dark}
 .looke-threads.shell,.looke-threads.shell-discover:has(.discover-market-first){--ink:#f6f6f6;--muted:#969696;--line:#303033;--surface:#161617;--blue:#f6f6f6;--bg:#0a0a0b;background:#0a0a0b;color:#f6f6f6;min-height:100dvh}
 .looke-threads.shell .layout,.looke-threads.shell-discover:has(.discover-market-first) .layout{display:block;min-height:calc(100dvh - 68px)}
 .looke-threads.shell .topbar,.looke-threads.shell-discover:has(.discover-market-first) .topbar{
-  position:sticky;top:0;z-index:45;display:flex;align-items:center;justify-content:center;height:69px;
+  position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:center;height:69px;
   padding:0 24px;border:0;background:#0a0a0bef;backdrop-filter:blur(20px);color:#f6f6f6}
 .looke-threads .topbar .brand{position:fixed;top:18px;left:23px;z-index:70;display:flex;padding:0;border:0;color:#fff}
 .looke-threads .brand .brandmark{background:transparent;box-shadow:none;transform:none;height:36px;width:36px;
