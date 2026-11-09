@@ -2,12 +2,13 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import DiscoverDashboard from "../components/discover/DiscoverDashboard";
-import LookeLanding,{type LookeDestination} from "../components/landing/LookeLanding";
-import "../components/landing/looke-landing.css";
 import {TrendingFeed,MessagesPanel,NotificationsPanel,ProfilePanel} from "../components/experience/LookeViews";
 import {PointsDashboard} from "../components/experience/M19PointsDashboard";
 import {CreateCoinModal,WalletModal,type CoinQuickDraft} from "../components/experience/LookeOverlays";
 import "../components/experience/experience.css";
+import ThreadsHome from "../components/threads/ThreadsHome";
+import ThreadsNavIcon from "../components/threads/ThreadsNavIcon";
+import "../components/threads/threads.css";
 import { isAddress } from "viem";
 import { type CoinDraft, validateCoinDraft } from "../lib/metadata";
 import {createUltraPublicClient,verifyFactoryDeployment} from "../lib/verification";
@@ -16,7 +17,7 @@ import {
   shortAddress, testnetAddressUrl, testnetTxUrl,
 } from "../lib/ultra";
 
-type Screen = "Discover" | "Trending" | "Create" | "Uniq NFTs" | "Messages" | "Notifications" | "Wallet" | "Profile" | "Points";
+type Screen = "Home" | "Discover" | "Trending" | "Create" | "Uniq NFTs" | "Messages" | "Notifications" | "Wallet" | "Profile" | "Points";
 
 type EthereumProvider = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -60,7 +61,7 @@ async function ensureUltraNetwork(provider: EthereumProvider): Promise<void> {
 }
 
 export default function Home() {
-  const [screen, setScreen] = useState<Screen>("Discover");
+  const [screen, setScreen] = useState<Screen>("Home");
   const [showCreate,setShowCreate] = useState(false);
   const [showWallet,setShowWallet] = useState(false);
   const [chosenPair,setChosenPair] = useState<"ULTRA"|"LOOKE">("ULTRA");
@@ -79,11 +80,7 @@ export default function Home() {
   const [confirmedCoin, setConfirmedCoin] = useState("");
   const factoryConfigured = isAddress(LOOKE_FACTORY_ADDRESS) && /^0x[\da-fA-F]{64}$/.test(LOOKE_FACTORY_DEPLOY_TX);
   const onUltra = chain.toLowerCase() === ULTRA_EVM_TESTNET.chainIdHex;
-  const screens: Screen[] = ["Discover","Trending","Messages","Create","Notifications","Points","Wallet","Profile","Uniq NFTs"];
-  const icons: Record<Screen,string> = {
-    Discover:"⌂",Trending:"ϟ",Messages:"➤",Create:"＋",
-    Notifications:"♧",Points:"✧",Wallet:"▣",Profile:"◉","Uniq NFTs":"◇",
-  };
+  const screens: Screen[] = ["Home","Discover","Create","Messages","Notifications","Uniq NFTs","Points","Wallet","Profile"];
   function chooseNavigation(item:Screen){
     setNotice("");
     if(item==="Create"){setShowCreate(true);return;}
@@ -191,20 +188,19 @@ export default function Home() {
     setNotice("The "+chosenPair+" pairing is not operationally verified. This is a token draft only; no transaction has been prepared.");
   }
 
-  function enterLanding(screen:LookeDestination){chooseNavigation(screen);window.requestAnimationFrame(()=>document.getElementById("looke-app")?.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}));}
   return (
-    <>
-      <LookeLanding onEnter={enterLanding}/>
-      <main id="looke-app" className="shell shell-discover looke-v14-shell">
+      <main id="looke-app" className="shell shell-discover looke-v14-shell looke-threads">
       <header className="topbar">
-        <button className="brand" aria-label="Looke home" onClick={() => setScreen("Discover")}>
+        <button className="brand" aria-label="Looke home" onClick={() => setScreen("Home")}>
           <span className="brandmark">L<span>●</span></span>
           <span>looke<span className="branddot">.</span></span>
         </button>
-        <div className="lk-global-search"><span aria-hidden="true">⌕</span>
-          <input type="search" value={globalSearch} onChange={e=>setGlobalSearch(e.target.value)}
-            aria-label="Search Looke creators and markets" placeholder="Search for creators, trends or tokens…"/>
-          {globalSearch&&<button type="button" aria-label="Clear search" onClick={()=>setGlobalSearch("")}>×</button>}
+        <div className="lt-header-center">
+          {screen === "Discover" ? <div className="lk-global-search"><span aria-hidden="true">⌕</span>
+            <input type="search" value={globalSearch} onChange={e=>setGlobalSearch(e.target.value)}
+              aria-label="Search Looke creators and markets" placeholder="Search Looke..."/>
+            {globalSearch&&<button type="button" aria-label="Clear search" onClick={()=>setGlobalSearch("")}>×</button>}
+          </div> : <h1>{screen === "Home" ? "Home" : screen === "Uniq NFTs" ? "NFTs" : screen === "Discover" ? "Search" : screen}</h1>}
         </div>
         <button className="wallet" onClick={()=>{if(address)setShowWallet(true);else void connectWallet();}} disabled={walletBusy}>
           <span className="wallet-led" /> {walletBusy ? "Connecting…" : address ? shortAddress(address) : "Connect wallet"} <span aria-hidden="true">↗</span>
@@ -218,7 +214,7 @@ export default function Home() {
             {screens.map(item => (
               <button key={item} className={`navitem ${screen===item||(item==="Create"&&showCreate)||(item==="Wallet"&&showWallet)?"nav-active":""}`}
                 title={item} aria-label={item} aria-pressed={screen===item} onClick={()=>chooseNavigation(item)}>
-                <span className="navicon">{icons[item]}</span>{item}<span className="navarrow">↗</span>
+                <span className="navicon"><ThreadsNavIcon name={item}/></span><span className="lt-nav-label">{item === "Discover" ? "Search" : item === "Uniq NFTs" ? "NFTs" : item === "Create" ? "Create token" : item}</span><span className="navarrow">↗</span>
               </button>
             ))}
           </nav>
@@ -231,6 +227,7 @@ export default function Home() {
         </aside>
 
         <section className="content">
+          {screen === "Home" && <ThreadsHome search={globalSearch} />}
           {screen === "Discover" && <DiscoverDashboard globalQuery={globalSearch} onCreate={()=>setShowCreate(true)} />}
           {screen === "Trending" && <TrendingFeed search={globalSearch} onCreate={()=>setShowCreate(true)}/>}
           {screen === "Messages" && <MessagesPanel/>}
@@ -299,6 +296,5 @@ export default function Home() {
         onConnect={()=>{setShowWallet(false);void connectWallet();}}
         onTrade={()=>{setShowWallet(false);window.location.assign("/trade");}}/>}
       </main>
-    </>
   );
 }
