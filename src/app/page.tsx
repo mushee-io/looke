@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import DiscoverDashboard from "../components/discover/DiscoverDashboard";
+import LookeLanding,{type LookeDestination} from "../components/landing/LookeLanding";
+import "../components/landing/looke-landing.css";
 import {TrendingFeed,MessagesPanel,NotificationsPanel,ProfilePanel} from "../components/experience/LookeViews";
 import {PointsDashboard} from "../components/experience/M19PointsDashboard";
 import {CreateCoinModal,WalletModal,type CoinQuickDraft} from "../components/experience/LookeOverlays";
@@ -189,8 +191,11 @@ export default function Home() {
     setNotice("The "+chosenPair+" pairing is not operationally verified. This is a token draft only; no transaction has been prepared.");
   }
 
+  function enterLanding(screen:LookeDestination){chooseNavigation(screen);window.requestAnimationFrame(()=>document.getElementById("looke-app")?.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}));}
   return (
-    <main className="shell shell-discover looke-v14-shell">
+    <>
+      <LookeLanding onEnter={enterLanding}/>
+      <main id="looke-app" className="shell shell-discover looke-v14-shell">
       <header className="topbar">
         <button className="brand" aria-label="Looke home" onClick={() => setScreen("Discover")}>
           <span className="brandmark">L<span>●</span></span>
@@ -293,6 +298,7 @@ export default function Home() {
         onClose={()=>setShowWallet(false)}
         onConnect={()=>{setShowWallet(false);void connectWallet();}}
         onTrade={()=>{setShowWallet(false);window.location.assign("/trade");}}/>}
-    </main>
+      </main>
+    </>
   );
 }
