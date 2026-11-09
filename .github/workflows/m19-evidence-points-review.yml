@@ -4,6 +4,7 @@ on:
     paths:
       - "src/app/social/**"
       - "src/app/page.tsx"
+      - "src/app/feed/**"
       - "src/app/api/social/points/**"
       - "src/components/experience/M19*"
       - "src/components/experience/m19.css"

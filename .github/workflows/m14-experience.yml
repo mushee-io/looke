@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - "src/app/page.tsx"
+      - "src/app/feed/**"
+      - "src/components/landing/**"
+      - "src/components/threads/**"
       - "src/app/social/page.tsx"
       - "src/app/api/experience/**"
       - "src/components/experience/**"
@@ -52,8 +55,10 @@ jobs:
             if curl -fsS http://127.0.0.1:3100/ >/dev/null; then break; fi
             sleep 1
           done
-          # The redesigned homepage is a Threads-style social feed, not the old marketing/markets hero.
-          curl -fsS http://127.0.0.1:3100/ -o /tmp/looke-home.html
+          # Verify the landing page and the separate Threads feed.
+          curl -fsS http://127.0.0.1:3100/ -o /tmp/looke-landing.html
+          grep -Fq "Looke Good Chaos introduction" /tmp/looke-landing.html
+          curl -fsS http://127.0.0.1:3100/feed -o /tmp/looke-home.html
           grep -Fq "Looke Home feed" /tmp/looke-home.html
           grep -Fq "Share with Looke" /tmp/looke-home.html
           curl -fsS http://127.0.0.1:3100/api/experience/notifications | node -e '

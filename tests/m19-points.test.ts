@@ -54,7 +54,7 @@ test("Account dashboard and operator queue cannot offer any mint, claim or payou
  const user=source("src/app/api/social/points/route.ts");
  const operator=source("src/app/api/social/points/operator/route.ts");
  const sql=source("db/migrations/006_evidence_points_and_vesting.sql");
- const home=source("src/app/page.tsx");
+ const home=source("src/app/feed/page.tsx");
  assert.match(user,/requireViewer\(request\)/);
  assert.match(user,/l\.owner=\$1/);
  assert.match(user,/claimingEnabled:false/);

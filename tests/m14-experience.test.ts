@@ -8,7 +8,7 @@ import {
 } from "../src/lib/experience/validation";
 
 function source(path:string){return readFileSync(resolve(path),"utf8");}
-const home=source("src/app/page.tsx");
+const home=source("src/app/feed/page.tsx");
 const views=source("src/components/experience/LookeViews.tsx");
 const overlays=source("src/components/experience/LookeOverlays.tsx");
 const style=source("src/components/experience/experience.css");

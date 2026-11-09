@@ -66,10 +66,10 @@ function Studies({onEnter}:Props){return <section className="lch-studies lch-pad
 function Contact({onEnter}:Props){return <section className="lch-contact lch-pad" id="looke-contact"><div className="lch-meta lch-mono"><span>03 / YOUR TURN</span><span>OPEN FOR NEW CONVERSATIONS</span></div><h2>LET&apos;S MAKE<br/><em>A SCENE.</em></h2><div className="lch-contact-bottom"><p>Have something worth sharing? Give it a signal. The next big thing could begin with your first conversation.</p><button type="button" className="lch-contact-cta lch-mono" onClick={()=>onEnter("Messages")}>START A CONVERSATION <span>↗</span></button></div></section>}
 export default function LookeLanding({onEnter}:Props){
  return <div className="looke-chaos" id="looke-landing">
-  <a className="lch-skip" href="#looke-app">SKIP INTRO — OPEN LOOKE</a><Nav onEnter={onEnter}/><Orb/>
+  <a className="lch-skip" href="/feed">SKIP INTRO — OPEN LOOKE</a><Nav onEnter={onEnter}/><Orb/>
   <div className="lch-marquee" aria-hidden="true"><div>IDEAS ✳ COMMUNITY ✳ CREATOR TOKENS ✳ DIGITAL COLLECTIBLES ✳ NEW CONNECTIONS ✳ IDEAS ✳ COMMUNITY ✳ CREATOR TOKENS ✳ DIGITAL COLLECTIBLES ✳</div></div>
   <Manifesto onEnter={onEnter}/><Studies onEnter={onEnter}/><Contact onEnter={onEnter}/>
   <footer className="lch-footer lch-mono"><span>LOOKE ✳ — A NEW SOCIAL SIGNAL ON ULTRA EVM</span><a href="https://github.com/mushee-io/looke" target="_blank" rel="noopener noreferrer">GITHUB ↗</a><a href="#looke-top">BACK TO TOP ↑</a></footer>
-  <div className="lch-handoff lch-mono">YOUR SOCIAL WORLD STARTS BELOW ↓</div>
+  <div className="lch-handoff lch-mono"><a href="/feed">OPEN YOUR SOCIAL WORLD →</a></div>
  </div>
 }
