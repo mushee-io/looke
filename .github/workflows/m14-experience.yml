@@ -52,7 +52,10 @@ jobs:
             if curl -fsS http://127.0.0.1:3100/ >/dev/null; then break; fi
             sleep 1
           done
-          curl -fsS http://127.0.0.1:3100/ | grep -q "Search for creators"
+          # The redesigned homepage is a Threads-style social feed, not the old marketing/markets hero.
+          curl -fsS http://127.0.0.1:3100/ -o /tmp/looke-home.html
+          grep -Fq "Looke Home feed" /tmp/looke-home.html
+          grep -Fq "Share with Looke" /tmp/looke-home.html
           curl -fsS http://127.0.0.1:3100/api/experience/notifications | node -e '
             let s="";process.stdin.on("data",x=>s+=x).on("end",()=>{
               const n=JSON.parse(s);

@@ -1,0 +1,205 @@
+/* Looke social-first Threads-inspired shell. All wallet/on-chain workflows remain unchanged. */
+body:has(.looke-threads){background:#0a0a0b;color:#f6f6f6;color-scheme:dark}
+.looke-threads.shell,.looke-threads.shell-discover:has(.discover-market-first){--ink:#f6f6f6;--muted:#969696;--line:#303033;--surface:#161617;--blue:#f6f6f6;--bg:#0a0a0b;background:#0a0a0b;color:#f6f6f6;min-height:100dvh}
+.looke-threads.shell .layout,.looke-threads.shell-discover:has(.discover-market-first) .layout{display:block;min-height:calc(100dvh - 68px)}
+.looke-threads.shell .topbar,.looke-threads.shell-discover:has(.discover-market-first) .topbar{
+  position:sticky;top:0;z-index:45;display:flex;align-items:center;justify-content:center;height:69px;
+  padding:0 24px;border:0;background:#0a0a0bef;backdrop-filter:blur(20px);color:#f6f6f6}
+.looke-threads .topbar .brand{position:fixed;top:18px;left:23px;z-index:70;display:flex;padding:0;border:0;color:#fff}
+.looke-threads .brand .brandmark{background:transparent;box-shadow:none;transform:none;height:36px;width:36px;
+ border:3px solid #fff;border-radius:50%;font-size:22px;letter-spacing:-2px;color:#fff}
+.looke-threads .brand .brandmark>span{color:#fff;font-size:7px}
+.looke-threads .brand>span:last-child{display:none}
+.looke-threads .lt-header-center{text-align:center;width:min(100%,620px);display:flex;align-items:center;justify-content:center;min-height:60px}
+.looke-threads .lt-header-center h1{font:700 17px 'DM Sans',sans-serif;margin:0;letter-spacing:-.025em;color:#f8f8f8}
+.looke-threads .lk-global-search{background:#1a1a1b;border:1px solid #353535;box-shadow:none;max-width:480px;width:100%;height:43px;border-radius:25px}
+.looke-threads .lk-global-search input{color:#fff;background:transparent}
+.looke-threads .lk-global-search input::placeholder{color:#8a8a8a}
+.looke-threads.shell .wallet{position:absolute;right:26px;top:15px;z-index:3;border:1px solid #414141;
+ background:#171717;color:#f9f9f9;border-radius:25px;padding:10px 16px;font-size:12px;font-weight:700}
+.looke-threads .wallet-led{background:#a6a6a6;box-shadow:none;height:7px;width:7px}
+.looke-threads.shell .sidebar,.looke-threads.shell-discover:has(.discover-market-first) .sidebar{
+ position:fixed;inset:0 auto 0 0;z-index:55;box-sizing:border-box;width:84px;min-height:100dvh;
+ display:flex;align-items:center;flex-direction:column;padding:102px 10px 22px;
+ background:#0a0a0b;border:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+.looke-threads .sidebar::-webkit-scrollbar{display:none}
+.looke-threads .sidebar .sidebar-label,.looke-threads .sidebar .sidebar-bottom{display:none}
+.looke-threads .sidebar nav{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
+.looke-threads.shell .sidebar .navitem,.looke-threads.shell-discover .sidebar .navitem{
+ display:flex;justify-content:center;align-items:center;position:relative;padding:0;gap:0;flex-shrink:0;
+ width:56px;height:56px;color:#939393;background:transparent;border:0;border-radius:14px;
+ font-size:0;transition:background .2s,color .2s}
+.looke-threads .sidebar .navitem:hover{background:#1e1e1f;color:#fff}
+.looke-threads.shell .sidebar .navitem.nav-active{background:#202021;color:#fff}
+.looke-threads.shell .sidebar .navicon{display:flex;align-items:center;justify-content:center;font-size:0;min-width:0}
+.looke-threads .sidebar .lt-nav-label,.looke-threads .sidebar .navarrow{display:none}
+.looke-threads.shell .content,.looke-threads.shell-discover:has(.discover-market-first) .content{
+ width:min(640px,calc(100vw - 116px));max-width:none;padding:0 0 48px;
+ margin:0 auto;border-left:1px solid #2a2a2c;border-right:1px solid #2a2a2c;
+ background:#101011;min-height:calc(100dvh - 69px);color:#f4f4f4}
+.looke-threads.shell .content:has(.discover-market-first){width:min(1080px,calc(100vw - 140px));padding:12px 28px 40px}
+.looke-threads.shell .content:has(.lk-messages-page){width:min(950px,calc(100vw - 140px))}
+.looke-threads.shell .content:has(.create-screen){width:min(1080px,calc(100vw - 140px));padding:26px}
+.looke-threads.shell .content:has(.info-screen){padding:30px}
+.looke-threads .lt-feed{width:100%;margin:0}
+.looke-threads .lt-compose{min-height:148px;display:flex;gap:12px;align-items:flex-start;padding:25px 24px 22px;border-bottom:1px solid #303032;background:#111112}
+.looke-threads .lt-compose-avatar{height:42px;width:42px;flex:none;display:grid;place-items:center;border-radius:50%;border:1px solid #646464;
+ background:radial-gradient(circle at 32% 22%,#777 0%,#333 65%,#1c1c1c 100%);color:white;font-size:21px;font-weight:800}
+.looke-threads .lt-compose-body{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:9px}
+.looke-threads .lt-compose-body strong{font-size:13px;color:#f4f4f4}
+.looke-threads .lt-compose-placeholder{display:block;font-size:15px;color:#898989;text-decoration:none;padding:2px 0}
+.looke-threads .lt-compose-placeholder:hover{color:white}
+.looke-threads .lt-compose-hints{font-size:11px;letter-spacing:.01em;color:#777;margin-top:8px}
+.looke-threads .lt-hint-separator{color:#484848;margin:0 4px}
+.looke-threads .lt-compose-post{align-self:flex-end;margin-top:63px;border:0;background:#f5f5f5;color:#111;
+ text-decoration:none;font-weight:800;font-size:12px;padding:9px 20px;border-radius:24px}
+.looke-threads .lt-compose-post:hover{background:#d9d9d9}
+.looke-threads .lk-feed-page{width:100%;margin:0;padding:0}
+.looke-threads .lt-feed .lk-feed-trending-head,.looke-threads .lt-feed .lk-no-trends,
+.looke-threads .lt-feed .lk-feed-chip-strip{display:none}
+.looke-threads .lk-feed-title-row{margin:0;display:flex;align-items:center;padding:0;border-bottom:1px solid #313133;background:#101011}
+.looke-threads .lk-feed-title-row h2{display:none}
+.looke-threads .lk-feed-title-row>div{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:0}
+.looke-threads .lk-feed-title-row button{position:relative;color:#8d8d8d;font-size:13px;font-weight:700;padding:18px 5px;background:transparent;border:0}
+.looke-threads .lk-feed-title-row button.active{color:#fff}
+.looke-threads .lk-feed-title-row button.active:after{content:"";position:absolute;left:29%;right:29%;bottom:0;height:3px;border-radius:2px;background:#f6f6f6}
+.looke-threads .lk-feed-post{padding:24px;border-bottom:1px solid #333;min-width:0;color:#f2f2f2;background:#111112}
+.looke-threads .lk-feed-post-head{gap:12px;align-items:center;font-size:14px}
+.looke-threads .lk-feed-post-head>div{gap:2px}
+.looke-threads .lk-feed-post-head small,.looke-threads .lk-post-time{font-size:12px;color:#929292}
+.looke-threads .lk-avatar{background:linear-gradient(140deg,#777,#2b2b2b);color:#f4f4f4;width:40px;height:40px;border:1px solid #515151}
+.looke-threads .lk-post-text{font-size:15px;line-height:1.55;margin:12px 0 15px}
+.looke-threads .lk-post-actions{font-size:12px;gap:15px;flex-wrap:wrap;color:#aaa;margin-top:18px}
+.looke-threads .lk-post-actions a:hover{color:white}
+.looke-threads .lk-post-verified{color:#777;font-size:10px}
+.looke-threads .lk-m17-engagement{gap:7px;margin:5px 0}
+.looke-threads .lk-m17-engagement button{border:0;background:transparent;color:#aaa;border-radius:10px;font-size:12px;padding:8px 9px;font-weight:600}
+.looke-threads .lk-m17-engagement button:hover{color:white;background:#262626}
+.looke-threads .lk-m17-engagement button[aria-pressed=true]{color:white;background:#292929}
+.looke-threads .lk-m17-engagement a{color:#cacaca}
+.looke-threads .lk-post-asset{background:#1b1b1c;border:1px solid #373739;color:white}
+.looke-threads .lk-post-asset-icon,.looke-threads .lk-chip-icon{background:#292929;color:#f8f8f8}
+.looke-threads .lk-post-asset>a{color:#e8e8e8}
+.looke-threads .lk-evidence-note{background:#262117;border:1px solid #534526;color:#e2cc9b;margin:14px 24px;font-size:12px}
+.looke-threads .lk-feed-empty{text-align:center;padding:78px 30px 85px;background:#101011;color:#939393}
+.looke-threads .lk-empty-art{background:#202022;color:white;border:1px solid #383838;border-radius:50%;width:64px;height:64px;font-size:33px}
+.looke-threads .lk-feed-empty h3{font-size:21px;color:#fafafa}
+.looke-threads .lk-feed-empty p{font-size:13px}
+.looke-threads .lk-feed-empty-actions>a,.looke-threads .lk-feed-empty-actions>button{background:#242426;color:#f4f4f4;border:1px solid #404040;border-radius:24px}
+.looke-threads .lk-feed-empty-actions>button{background:#fff;color:#111}
+.looke-threads .lk-load-posts{background:#202020;color:#fff;border:1px solid #373737;border-radius:20px;margin:16px 24px;width:calc(100% - 48px)}
+.looke-threads .lk-feed-end{color:#777}
+.looke-threads .lk-feed-end span{color:#aaa}
+.looke-threads .footer{border-color:#343436;color:#7b7b7b;font-size:11px;padding:28px 24px}
+.looke-threads .lt-compose :is(a,button):focus-visible,.looke-threads :is(a,button,input,textarea):focus-visible{outline:2px solid #ddd;outline-offset:3px}
+/* Dark companion surfaces for social, messages, creator, NFTs, wallet and markets. */
+.looke-threads :is(.lk-messages-page,.lk-messages-list,.lk-messages-stage,.lk-notifications,.lk-profile-page,
+.lk-wallet-route,.create-screen,.info-screen){background:#101011;color:#f5f5f5}
+.looke-threads .lk-messages-page{grid-template-columns:minmax(200px,310px) minmax(0,1fr);min-height:75vh}
+.looke-threads .lk-messages-list{border-color:#303030}
+.looke-threads .lk-messages-controls label,.looke-threads .lk-compose-message input{
+ background:#1d1d1e;border-color:#393939;color:white}
+.looke-threads .lk-messages-controls input{color:white}
+.looke-threads .lk-messages-stage>button,.looke-threads .lk-notifications-empty button,
+.looke-threads .lk-wallet-route button{background:#f3f3f3;color:#141414;border-radius:22px}
+.looke-threads :is(.lk-messages-none p,.lk-messages-stage>p,.lk-notifications-empty p,.lk-profile-bio,.lk-profile-stats,
+.lk-profile-empty p,.lk-wallet-route p){color:#aaa}
+.looke-threads .lk-notification-tabs,.looke-threads .lk-notification-item,.looke-threads .lk-profile-tabs{border-color:#343434}
+.looke-threads .lk-notification-tabs button.active,.looke-threads .lk-profile-tabs button.active{color:#fff;border-color:#fff}
+.looke-threads .lk-notification-settings,.looke-threads .lk-profile-status,.looke-threads .lk-profile-posts article{
+ background:#1b1b1d;border:1px solid #363638;color:#bbb}
+.looke-threads .lk-profile-identity>span,.looke-threads .lk-profile-posts article small{color:#999}
+.looke-threads .lk-profile-share,.looke-threads .lk-profile-more{background:#1f1f20;border:1px solid #383838;color:#f5f5f5}
+.looke-threads .create-screen .page-title{font-size:clamp(40px,5vw,66px)}
+.looke-threads .page-title em,.looke-threads .preview-meta p{color:#c4c4c4}
+.looke-threads .page-description,.looke-threads .info-screen p{color:#999}
+.looke-threads :is(.create-form,.preview-panel){background:#181819;border:1px solid #353537;border-radius:20px;color:#eee}
+.looke-threads .create-form :is(input,textarea){background:#212123;border:1px solid #454547;color:#f8f8f8}
+.looke-threads .create-form :is(input,textarea):focus{border-color:#e7e7e7;box-shadow:0 0 0 3px #555}
+.looke-threads .preview-data,.looke-threads .roadmap-line{border-color:#353537}
+.looke-threads :is(.pill,.muted-tag){background:#282829;color:#c2c2c2}
+.looke-threads .primary{background:#f6f6f6;color:#141414;border-color:#f6f6f6;border-radius:25px}
+.looke-threads .launch-button{background:#eee;color:#111}
+.looke-threads .launch-button:disabled{background:#303030;color:#999}
+.looke-threads .info-icon{background:#232325;color:#eee}
+.looke-threads .lk-review-pair{background:#242425;color:#bbb;border-color:#38383b}
+.looke-threads .lk-review-pair>span{color:#fff}
+.looke-threads .discover-market-first{color:#f5f5f5;background:#101011}
+.looke-threads .discover-market-first :is(.discover-markets,.discover-row,.discover-market-heading,
+.discover-table,.discover-utility,.discover-categories){background:#101011;color:#f5f5f5;border-color:#323234}
+.looke-threads .discover-market-first .discover-market-heading h1,
+.looke-threads .discover-market-first .discover-row-name strong{color:#f5f5f5}
+.looke-threads .discover-market-first .discover-overline{color:#a9a9a9}
+.looke-threads .discover-market-first :is(.discover-search,.discover-market-status,.discover-empty-market,
+.discover-category-dot,.discover-pair-icon){background:#1c1c1d;color:#ddd;border:1px solid #363638;box-shadow:none}
+.looke-threads .discover-market-first .discover-search input{color:#eee}
+.looke-threads .discover-market-first .discover-category{color:#bdbdbd}
+.looke-threads .discover-market-first .discover-category:hover{color:#fff}
+.looke-threads .discover-market-first .discover-category-selected{color:#fff}
+.looke-threads .discover-market-first .discover-tabs{border-color:#343436}
+.looke-threads .discover-market-first .discover-tab{color:#9d9d9d}
+.looke-threads .discover-market-first .discover-tab.active{color:#fff;border-color:#eee}
+.looke-threads .discover-market-first .discover-row:hover{background:#202021;border-color:#666}
+.looke-threads .discover-market-first .discover-empty-copy h2{color:#fafafa}
+.looke-threads .discover-market-first .discover-empty-copy p{color:#aaa}
+.looke-threads .discover-market-first .discover-floating-create{background:#f4f4f4;color:#121212}
+.looke-threads .discover-market-first .discover-save{color:#aaa;background:transparent}
+.looke-threads .discover-market-first .discover-row-action{color:#eee}
+.looke-threads .discover-market-first .discover-create{background:#eee;color:#111;border-color:#eee}
+.looke-threads .discover-market-first .discover-market-network{color:#999}
+/* Existing wallet and create overlays, restyled without altering behavior. */
+.looke-threads .lk-overlay{background:#000b}
+.looke-threads :is(.lk-create-modal,.lk-wallet-modal){background:#191919;color:#f8f8f8;border:1px solid #3c3c3c;box-shadow:0 25px 80px #000a}
+.looke-threads :is(.lk-create-tabs,.lk-wallet-tabs){border-color:#363636}
+.looke-threads .lk-create-tab{color:#a3a3a3}
+.looke-threads .lk-create-tab.active{background:#313131;color:#fff}
+.looke-threads .lk-create-field>input{color:#fff;border-color:#444}
+.looke-threads .lk-image-uploader,.looke-threads .lk-pair-search,.looke-threads .lk-pair,
+.looke-threads .lk-wallet-actions button,.looke-threads .lk-wallet-action-detail{background:#252525;color:#f0f0f0;border-color:#3c3c3c}
+.looke-threads .lk-wide-action{background:#f4f4f4;color:#111}
+.looke-threads .lk-wide-action:disabled{background:#3a3a3a;color:#888}
+.looke-threads .lk-wallet-alert{background:#33231f;color:#f6c2aa}
+.looke-threads .lk-wallet-tabs button{color:#a2a2a2}
+.looke-threads .lk-wallet-tabs button.active{color:white;border-color:white}
+.looke-threads .lk-wallet-blank strong{color:#fff}
+.looke-threads .lk-modal-x{color:#dedede}
+@media(min-width:1200px){.looke-threads.shell .content{position:relative;left:-10px}}
+@media(max-width:900px){
+ .looke-threads.shell .wallet{right:16px}
+ .looke-threads.shell .content:has(.discover-market-first){padding:8px 14px;width:calc(100vw - 110px)}
+ .looke-threads .discover-market-first .discover-categories-scroll{gap:14px}
+ .looke-threads .discover-market-first .discover-table{overflow-x:auto}
+ .looke-threads .discover-market-first .discover-table-head,.looke-threads .discover-market-first .discover-row{min-width:850px}
+}
+@media(max-width:700px){
+ .looke-threads.shell .topbar,.looke-threads.shell-discover:has(.discover-market-first) .topbar{height:58px;padding:0 8px}
+ .looke-threads .topbar .brand{position:absolute;top:11px;left:14px}
+ .looke-threads .brand .brandmark{width:31px;height:31px;font-size:19px}
+ .looke-threads .lt-header-center{min-height:58px}
+ .looke-threads.shell .wallet{right:9px;top:13px;padding:7px 10px;font-size:10px;max-width:126px;overflow:hidden;text-overflow:ellipsis}
+ .looke-threads.shell .sidebar,.looke-threads.shell-discover:has(.discover-market-first) .sidebar{
+   position:fixed;top:auto;bottom:0;left:0;right:0;width:100%;height:67px;min-height:0;
+   padding:6px 4px max(7px,env(safe-area-inset-bottom));background:#0c0c0deF;border-top:1px solid #353535;
+   z-index:90;overflow-x:auto;overflow-y:hidden}
+ .looke-threads .sidebar nav{flex-direction:row;justify-content:space-evenly;width:max-content;min-width:100%;gap:2px}
+ .looke-threads.shell .sidebar .navitem{width:45px;height:47px;border-radius:11px}
+ .looke-threads.shell .sidebar .navicon svg{width:23px;height:23px}
+ .looke-threads.shell .content,.looke-threads.shell-discover:has(.discover-market-first) .content,
+ .looke-threads.shell .content:has(.discover-market-first),.looke-threads.shell .content:has(.create-screen),
+ .looke-threads.shell .content:has(.lk-messages-page){
+  width:100%;max-width:none;margin:0;left:auto;padding:0 0 95px;border:0;background:#101011}
+ .looke-threads.shell .content:has(.discover-market-first),.looke-threads.shell .content:has(.create-screen){padding:12px 14px 100px}
+ .looke-threads .lt-compose{padding:20px 16px}
+ .looke-threads .lt-compose-post{margin-top:69px}
+ .looke-threads .lk-feed-post{padding:20px 16px}
+ .looke-threads .lk-feed-empty{padding:65px 18px}
+ .looke-threads .lk-post-verified{display:none}
+ .looke-threads .lk-messages-page{display:block}
+ .looke-threads .lk-messages-list{border-right:0;border-bottom:1px solid #333;min-height:235px}
+ .looke-threads .lk-messages-stage{min-height:260px}
+ .looke-threads .create-grid{grid-template-columns:1fr}
+ .looke-threads .create-form,.looke-threads .preview-panel{padding:22px}
+ .looke-threads .discover-market-first .discover-market-network{display:none}
+ .looke-threads .discover-market-first .discover-table-head,.looke-threads .discover-market-first .discover-row{min-width:790px}
+}
+@media(prefers-reduced-motion:reduce){.looke-threads *, .looke-threads *:before, .looke-threads *:after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
